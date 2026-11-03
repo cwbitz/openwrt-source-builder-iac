@@ -1,0 +1,113 @@
+---
+# Per-machine build variants (`make host-init` creates host_vars/<machine>/; the
+# name MUST match the inventory host). Each entry is one (source ref, target,
+# profile, modules, packages, settings) build; keys are optional and fall back to
+# the role defaults. Machine-wide settings live in group_vars/builders/main.yml;
+# no firmware secrets are baked into the image.
+
+# Docker Hub pull-through mirrors for the build host; e.g. ["https://mirror.gcr.io"]
+# is the fastest from an APAC host and also lifts Docker Hub's anonymous pull limit.
+docker_registry_mirrors: []
+
+# [OPTIONAL] Refuse to start a build below this much free space on the builder.
+# A full source build peaks around 30 GB (build_dir + dl/ + ccache/).
+source_min_free_gb: 25
+
+build_variants:
+  - name: main
+    # [REQUIRED] OpenWrt source build settings.
+    source:
+      # [REQUIRED] tag, branch or commit-ish; pin a tag for reproducible builds.
+      # The resolved commit is recorded in artifacts/<build_id>/build-info/.
+      ref: "<release-tag-or-commit>"
+      # [REQUIRED] <target>/<subtarget>, e.g. mediatek/filogic, x86/64.
+      target: "<target>/<subtarget>"
+      # [OPTIONAL] upstream repository; use a mirror when git.openwrt.org is slow.
+      repo_url: "https://git.openwrt.org/openwrt/openwrt.git"
+      # [OPTIONAL] git fetch before building (off = reuse the cached tree).
+      update: false
+      # [OPTIONAL] parallel jobs; empty = min(nproc, RAM-GB / 2).
+      jobs: ""
+      # [OPTIONAL] make clean before building (keeps dl/ and ccache/).
+      clean: false
+      # [OPTIONAL] ccache across builds (needs disk; disable on small volumes).
+      ccache: true
+      # [OPTIONAL] pinned build-environment image (this project's own Dockerfile).
+      build_image: "openwrt-buildroot:debian13"
+      # [OPTIONAL] extra kernel options merged into .config before defconfig.
+      # Every entry is asserted again after defconfig; a dropped option fails the
+      # build instead of silently shipping a kernel without BTF/ftrace.
+      kernel:
+        - CONFIG_KERNEL_DEBUG_INFO=y
+        - CONFIG_KERNEL_DEBUG_INFO_BTF=y
+        - CONFIG_KERNEL_FTRACE=y
+        - CONFIG_KERNEL_FUNCTION_TRACER=y
+        - CONFIG_KERNEL_DYNAMIC_FTRACE=y
+    # [REQUIRED] device profile from target/linux/<target>/<subtarget>/profiles.
+    target_profile: "<profile>"
+    # A module is enabled by listing any of its fields; omit the block (or leave
+    # it empty: `system: {}`) to keep the module disabled. `disable-ipv6` is a
+    # plain boolean flag.
+    # Order below is bottom-up: system -> network -> IPv6 -> admin -> monitoring.
+    system:
+      hostname: "openwrt-main"
+      timezone: "CST-8"
+      zonename: "Asia/Shanghai"
+    # [OPTIONAL] LAN configuration rendered into first-boot uci-defaults.
+    # Omit `gateway`/`dns` and keep dhcp=true for a main router; set gateway/dns
+    # and dhcp=false for an AP or bypass router. WAN (DHCP/PPPoE) is configured
+    # after first boot.
+    network:
+      lan_ip: 192.0.2.1/24
+      gateway: ""
+      dns: []
+      dhcp: true
+    disable-ipv6: true
+    administration:
+      # empty = keep the system default; this is only the initial password.
+      root_password: ""
+      ssh:
+        # empty = system default (listen on all); e.g. "lan".
+        interface: ""
+        # empty = system default (22); e.g. "22".
+        port: ""
+    statistics:
+      interfaces: [br-lan, eth1]
+      sensors: true
+      irq: true
+      # RRD archives: 2h high-res + daily/weekly/monthly/yearly downsampled.
+      rrd_timespans: [2hour, 1day, 1week, 1month, 1year]
+    # [OPTIONAL] exact package list; '-' removes a package from the base image.
+    # The statistics module installs its own packages; list non-module packages here.
+    packages:
+      - luci
+      - "-dnsmasq"
+      - dnsmasq-full
+      - "-wpad-basic-mbedtls"
+      - wpad-mbedtls
+      - openssl-util
+      - openssh-sftp-server
+      - rsync
+      - luci-i18n-base-zh-cn
+      - luci-i18n-firewall-zh-cn
+      - luci-i18n-package-manager-zh-cn
+      - curl
+      - vim-full
+      - diffutils
+      - bind-dig
+      - nping
+      - conntrack
+      - tcpdump
+      - python3
+      - ca-bundle
+    # [OPTIONAL] control-node directory copied over the image rootfs after the
+    # module overlays; e.g. "{{ inventory_dir }}/custom/{{ inventory_hostname }}/{{ build_variant.name }}".
+    custom_overlay: ""
+    # [OPTIONAL] output-filename tag (image.mk adds the separators).
+    extra_firmware_name: "main"
+    # [OPTIONAL] space-separated init.d services to disable (empty = none).
+    # Source builds have no DISABLED_SERVICES make variable: the first-boot
+    # overlay disables them instead.
+    disabled_services: ""
+    # [OPTIONAL] root filesystem partition size in MB, 64-32768 (empty = target default).
+    rootfs_partsize: ""

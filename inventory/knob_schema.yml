@@ -1,0 +1,17 @@
+---
+operator_knob_schema:
+  docker_registry_mirrors: >-
+    docker_registry_mirrors is not defined
+    or ((docker_registry_mirrors is sequence) and not (docker_registry_mirrors is string)
+    and not (docker_registry_mirrors is mapping)
+    and (docker_registry_mirrors | reject('match', '^https?://[^/]+') | list | length == 0))
+  build_variants: >-
+    (build_variants is defined)
+    and ((build_variants is sequence) and not (build_variants is string)
+    and not (build_variants is mapping))
+    and ((build_variants | default('', true) | string | trim | length) > 0)
+  source_min_free_gb: >-
+    (source_min_free_gb is not defined)
+    or ((source_min_free_gb | string is match('^[0-9]+$'))
+        and (source_min_free_gb | int >= 10)
+        and (source_min_free_gb | int <= 500))

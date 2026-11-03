@@ -1,0 +1,32 @@
+# Shared builder connection vault. Copy to
+# inventory/group_vars/builders/vault.yml, fill in real values, then encrypt:
+#   make vault-init          # one-time
+#   make vault-edit-group    # edit the shared vault
+# The identity belongs to the machine, so every variant on it shares the vault.
+# Values are control -> builder credentials; only PASSWORDS live here, while the
+# account name and the key paths are non-secret and live in
+# inventory/group_vars/builders/main.yml.
+#
+# A machine shared with openwrt-image-builder-iac should use SSH keys for the
+# `iac` account (host_iac_ssh_pubkey_file in both projects) and leave
+# vault_host_iac_password empty in both, so neither project generates a value
+# the other does not know.
+
+# Probed [iac, admin, root]; build/info use `iac`. Each identity needs a
+# password here and/or a key path in the group main.yml (SSH prefers the key).
+vault_host_root_password: ""
+# Optional human 'admin' account, created only when create_admin_account is true;
+# always gets a password (generated here when empty) for console login and sudo.
+vault_host_admin_password: ""
+# The automation account host-bootstrap creates/repairs (name fixed). Its
+# password is generated here when no public key path is set in the group main.yml.
+vault_host_iac_password: ""
+
+# ==============================================================================
+# Secrets written by the role (fill-if-empty; never rotated)
+# ==============================================================================
+#   vault_host_iac_password       automation-account password, generated when no
+#                                 public key is given
+#   vault_host_admin_password     admin password, generated when create_admin_account
+#                                 is true and the value is empty
+# ==============================================================================

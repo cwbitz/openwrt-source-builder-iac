@@ -1,0 +1,316 @@
+---
+- name: Validate operator knobs
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Load the operator knob schema
+      ansible.builtin.include_vars:
+        file: "{{ playbook_dir }}/../inventory/knob_schema.yml"
+
+    - name: Assert the schema covers every example knob
+      ansible.builtin.assert:
+        that:
+          - operator_knob_schema.keys() | sort == (lookup('file', playbook_dir ~ '/../inventory/host_vars/example/main.yml') | from_yaml).keys() | sort
+        fail_msg: "inventory/knob_schema.yml is out of sync with inventory/host_vars/example/main.yml"
+        quiet: true
+
+    - name: Validate every operator knob
+      ansible.builtin.assert:
+        that:
+          - "{{ item.value }}"
+        fail_msg: >-
+          {{ inventory_hostname }}: invalid {{ item.key }} =
+          {{ vars[item.key] | default('<unset>') | to_json }}
+        quiet: true
+      loop: "{{ operator_knob_schema | dict2items }}"
+      loop_control:
+        label: "{{ item.key }}"
+
+    - name: Assert variant names are unique
+      ansible.builtin.assert:
+        that:
+          - >-
+            build_variants | map(attribute='name') | list | length
+            == build_variants | map(attribute='name') | unique | list | length
+        fail_msg: "{{ inventory_hostname }}: build_variants names must be unique."
+        quiet: true
+
+    - name: Validate the variant structure
+      ansible.builtin.assert:
+        that:
+          - item.name is defined and item.name is string and (item.name | length) > 0
+          - item.name is match('^[A-Za-z0-9][A-Za-z0-9_.-]*$')
+          - item.custom_overlay | default('') is string
+          - item.extra_firmware_name | default('') is string
+          - item.disabled_services | default('') is string
+          - item.rootfs_partsize | default('') is string
+          - item.packages | default([]) is sequence
+          - item.packages | default([]) is not string
+          - item.packages | default([]) | reject('string') | list | length == 0
+        fail_msg: "{{ inventory_hostname }}: invalid build variant {{ item.name | default('<unnamed>') }}"
+        quiet: true
+      loop: "{{ build_variants }}"
+      loop_control:
+        label: "{{ item.name | default('<unnamed>') }}"
+
+    - name: Assert the example placeholders are replaced
+      vars:
+        src: "{{ item.source | default({}) }}"
+      ansible.builtin.assert:
+        that:
+          - (src.get('ref', '') | string) is not search('[<>]')
+          - (src.get('target', '') | string) is not search('[<>]')
+          - (item.target_profile | default('') | string) is not search('[<>]')
+        fail_msg: >-
+          {{ inventory_hostname }}: variant {{ item.name | default('<unnamed>') }}
+          still carries an example placeholder in source.ref, source.target or
+          target_profile. Replace them with real values: the target from
+          Makefile targets and the profile from
+          target/linux/<target>/<subtarget>/profiles (make host-init copies the
+          example verbatim).
+        quiet: true
+      loop: "{{ build_variants }}"
+      loop_control:
+        label: "{{ item.name | default('<unnamed>') }}"
+
+    - name: Validate the source block type
+      ansible.builtin.assert:
+        that:
+          - item.source is defined
+          - item.source is mapping
+        fail_msg: >-
+          {{ inventory_hostname }}: variant {{ item.name | default('<unnamed>') }}
+          requires a `source` mapping (ref, target, ...).
+        quiet: true
+      loop: "{{ build_variants }}"
+      loop_control:
+        label: "{{ item.name | default('<unnamed>') }}"
+
+    - name: Validate the source block fields
+      vars:
+        src: "{{ item.source | default({}) }}"
+        unknown_keys: >-
+          {{ src.keys() | difference(
+               ['ref', 'target', 'repo_url', 'update', 'jobs', 'clean', 'ccache',
+                'build_image', 'kernel']) | list }}
+      ansible.builtin.assert:
+        that:
+          - unknown_keys | length == 0
+          - src.get('ref', '') is string and (src.get('ref', '') | string | trim | length) > 0
+          - src.get('ref', '') is match('^[A-Za-z0-9][A-Za-z0-9._/-]*$')
+          - src.get('target', '') is string
+          - src.get('target', '') is match('^[a-z0-9_]+/[a-z0-9_]+$')
+          - src.get('repo_url', '') is string
+          - >-
+            src.get('repo_url', '') is match('^(https?://|git://|ssh://|git@)')
+          - src.get('update', false) is boolean
+          - src.get('clean', false) is boolean
+          - src.get('ccache', true) is boolean
+          - (src.get('jobs', '') | string) is match('^[0-9]*$')
+          - >-
+            (src.get('jobs', '') | string | length) == 0
+            or ((src.get('jobs', '') | int) >= 1 and (src.get('jobs', '') | int) <= 64)
+          - src.get('build_image', '') is string
+          - >-
+            src.get('build_image', '')
+            is match('^[a-z0-9][a-z0-9._/-]*:[A-Za-z0-9._-]+$')
+          - src.get('kernel', []) is sequence
+          - src.get('kernel', []) is not string
+          - src.get('kernel', []) | reject('string') | list | length == 0
+          - >-
+            src.get('kernel', [])
+            | reject('match', '^CONFIG_[A-Z0-9_]+=[ym]$') | list | length == 0
+        fail_msg: >-
+          {{ inventory_hostname }}: variant {{ item.name | default('<unnamed>') }}
+          has invalid source={{ item.source | default({}) | to_json }}
+          {{ ('(unknown key(s): ' ~ (unknown_keys | join(', ')) ~ ')') if unknown_keys else '' }}
+        quiet: true
+      loop: "{{ build_variants }}"
+      loop_control:
+        label: "{{ item.name | default('<unnamed>') }}"
+
+    - name: Validate the target profile
+      ansible.builtin.assert:
+        that:
+          - item.target_profile is defined
+          - item.target_profile is string
+          - (item.target_profile | trim | length) > 0
+          - item.target_profile is not search('[<>]')
+          - item.target_profile is match('^[A-Za-z0-9][A-Za-z0-9_.-]*$')
+        fail_msg: >-
+          {{ inventory_hostname }}: variant {{ item.name | default('<unnamed>') }}
+          needs a real target_profile from target/linux/<target>/<subtarget>/profiles
+          (got {{ item.target_profile | default('<unset>') | to_json }}).
+        quiet: true
+      loop: "{{ build_variants }}"
+      loop_control:
+        label: "{{ item.name | default('<unnamed>') }}"
+
+    - name: Validate the root filesystem partition size
+      ansible.builtin.assert:
+        that:
+          - >-
+            item.rootfs_partsize | default('') == ''
+            or (item.rootfs_partsize | string is match('^[1-9][0-9]*$')
+                and item.rootfs_partsize | int >= 64
+                and item.rootfs_partsize | int <= 32768)
+        fail_msg: >-
+          {{ inventory_hostname }}: variant {{ item.name | default('<unnamed>') }}
+          has invalid rootfs_partsize={{ item.rootfs_partsize | default('<unset>') | to_json }};
+          use an empty value (target default) or a size in MB between 64 and 32768.
+        quiet: true
+      loop: "{{ build_variants }}"
+      loop_control:
+        label: "{{ item.name | default('<unnamed>') }}"
+
+    - name: Validate the network block type
+      ansible.builtin.assert:
+        that:
+          - item.network is mapping
+        fail_msg: "{{ inventory_hostname }}: variant {{ item.name | default('<unnamed>') }} network must be a mapping"
+        quiet: true
+      when: item.network is defined
+      loop: "{{ build_variants }}"
+      loop_control:
+        label: "{{ item.name | default('<unnamed>') }}"
+
+    - name: Validate the network fields
+      vars:
+        net: "{{ item.network | default({}) }}"
+        unknown_keys: "{{ net.keys() | difference(['lan_ip', 'gateway', 'dns', 'dhcp']) | list }}"
+      ansible.builtin.assert:
+        that:
+          - unknown_keys | length == 0
+          - net.get('lan_ip', '') is string
+          - net.get('gateway', '') is string
+          - net.get('dns', []) is sequence
+          - net.get('dns', []) is not string
+          - net.get('dns', []) | reject('string') | list | length == 0
+          - net.get('dhcp', true) is boolean
+          - "net.get('lan_ip', '') == '' or net.get('lan_ip', '') is match('^([0-9]{1,3}\\.){3}[0-9]{1,3}(/[0-9]{1,2})?$')"
+          - "net.get('gateway', '') == '' or net.get('gateway', '') is match('^([0-9]{1,3}\\.){3}[0-9]{1,3}$')"
+        fail_msg: >-
+          {{ inventory_hostname }}: variant {{ item.name | default('<unnamed>') }}
+          has invalid network={{ item.network | default({}) | to_json }}
+          {{ ('(unknown key(s): ' ~ (unknown_keys | join(', ')) ~ ')') if unknown_keys else '' }}
+        quiet: true
+      when: item.network is defined and item.network is mapping
+      loop: "{{ build_variants }}"
+      loop_control:
+        label: "{{ item.name | default('<unnamed>') }}"
+
+    - name: Validate the system block type
+      ansible.builtin.assert:
+        that:
+          - item.system is mapping
+        fail_msg: "{{ inventory_hostname }}: variant {{ item.name | default('<unnamed>') }} system must be a mapping"
+        quiet: true
+      when: item.system is defined
+      loop: "{{ build_variants }}"
+      loop_control:
+        label: "{{ item.name | default('<unnamed>') }}"
+
+    - name: Validate the system fields
+      vars:
+        sys: "{{ item.system | default({}) }}"
+        unknown_keys: "{{ sys.keys() | difference(['hostname', 'timezone', 'zonename']) | list }}"
+      ansible.builtin.assert:
+        that:
+          - unknown_keys | length == 0
+          - sys.get('hostname', '') is string
+          - "sys.get('hostname', '') == '' or sys.get('hostname', '') is match('^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$')"
+          - sys.get('timezone', '') is string
+          - sys.get('zonename', '') is string
+        fail_msg: >-
+          {{ inventory_hostname }}: variant {{ item.name | default('<unnamed>') }}
+          has invalid system={{ item.system | default({}) | to_json }}
+          {{ ('(unknown key(s): ' ~ (unknown_keys | join(', ')) ~ ')') if unknown_keys else '' }}
+        quiet: true
+      when: item.system is defined and item.system is mapping
+      loop: "{{ build_variants }}"
+      loop_control:
+        label: "{{ item.name | default('<unnamed>') }}"
+
+    - name: Validate the statistics block type
+      ansible.builtin.assert:
+        that:
+          - item.statistics is mapping
+        fail_msg: "{{ inventory_hostname }}: variant {{ item.name | default('<unnamed>') }} statistics must be a mapping"
+        quiet: true
+      when: item.statistics is defined
+      loop: "{{ build_variants }}"
+      loop_control:
+        label: "{{ item.name | default('<unnamed>') }}"
+
+    - name: Validate the statistics fields
+      vars:
+        stats: "{{ item.statistics | default({}) }}"
+        unknown_keys: "{{ stats.keys() | difference(['interfaces', 'sensors', 'irq', 'rrd_timespans']) | list }}"
+      ansible.builtin.assert:
+        that:
+          - unknown_keys | length == 0
+          - stats.get('interfaces', []) is sequence
+          - stats.get('interfaces', []) is not string
+          - stats.get('interfaces', []) | reject('string') | list | length == 0
+          - stats.get('sensors', false) is boolean
+          - stats.get('irq', false) is boolean
+          - stats.get('rrd_timespans', []) is sequence
+          - stats.get('rrd_timespans', []) is not string
+          - stats.get('rrd_timespans', []) | difference(['2hour', '1day', '1week', '1month', '1year']) | length == 0
+        fail_msg: >-
+          {{ inventory_hostname }}: variant {{ item.name | default('<unnamed>') }}
+          has invalid statistics={{ item.statistics | default({}) | to_json }}
+          {{ ('(unknown key(s): ' ~ (unknown_keys | join(', ')) ~ ')') if unknown_keys else '' }}
+        quiet: true
+      when: item.statistics is defined and item.statistics is mapping
+      loop: "{{ build_variants }}"
+      loop_control:
+        label: "{{ item.name | default('<unnamed>') }}"
+
+    - name: Validate the administration block type
+      ansible.builtin.assert:
+        that:
+          - item.administration is mapping
+          - (item.administration | default({})).get('ssh', {}) is mapping
+        fail_msg: "{{ inventory_hostname }}: variant {{ item.name | default('<unnamed>') }} administration must be a mapping"
+        quiet: true
+      when: item.administration is defined
+      loop: "{{ build_variants }}"
+      loop_control:
+        label: "{{ item.name | default('<unnamed>') }}"
+
+    - name: Validate the administration fields
+      vars:
+        admin: "{{ item.administration | default({}) }}"
+        admin_ssh: "{{ (item.administration | default({})).get('ssh', {}) }}"
+        unknown_keys: "{{ admin.keys() | difference(['root_password', 'ssh']) | list }}"
+        unknown_ssh_keys: "{{ admin_ssh.keys() | difference(['interface', 'port']) | list }}"
+      ansible.builtin.assert:
+        that:
+          - unknown_keys | length == 0
+          - unknown_ssh_keys | length == 0
+          - admin.get('root_password', '') is string
+          - admin_ssh.get('interface', '') is string
+          - (admin_ssh.get('port', '') | string) is match('^[0-9]*$')
+        fail_msg: >-
+          {{ inventory_hostname }}: variant {{ item.name | default('<unnamed>') }}
+          has invalid administration={{ item.administration | default({}) | to_json }}
+          {{ ('(unknown key(s): ' ~ (unknown_keys | join(', ')) ~ ')') if unknown_keys else '' }}
+          {{ ('(unknown ssh key(s): ' ~ (unknown_ssh_keys | join(', ')) ~ ')') if unknown_ssh_keys else '' }}
+        quiet: true
+      when: >-
+        item.administration is defined and item.administration is mapping
+        and (item.administration | default({})).get('ssh', {}) is mapping
+      loop: "{{ build_variants }}"
+      loop_control:
+        label: "{{ item.name | default('<unnamed>') }}"
+
+    - name: Validate the disable-ipv6 flag
+      ansible.builtin.assert:
+        that:
+          - item.get('disable-ipv6', false) is boolean
+        fail_msg: "{{ inventory_hostname }}: variant {{ item.name | default('<unnamed>') }} disable-ipv6 must be true or false"
+        quiet: true
+      loop: "{{ build_variants }}"
+      loop_control:
+        label: "{{ item.name | default('<unnamed>') }}"

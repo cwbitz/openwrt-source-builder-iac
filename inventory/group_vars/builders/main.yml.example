@@ -1,0 +1,44 @@
+---
+# ==============================================================================
+# Machine-wide operator overrides for the `builders` group
+# (inventory/group_vars/builders/main.yml.example)
+# ==============================================================================
+# Copy to inventory/group_vars/builders/main.yml (`make host-init` creates it) to
+# change a shared value for every build machine; an empty copy is valid. One
+# inventory host = one build machine; its variants live in
+# host_vars/<machine>/main.yml (`build_variants`).
+#
+# This project is designed to COEXIST with openwrt-image-builder-iac on the same
+# machine. The system layer (the `iac` account, its sudoers file, SSH keys and
+# sshd hardening) is owned by whichever project bootstraps first and must be
+# configured identically in both, so every later run converges to a no-op. Set
+# create_admin_account=false and sshd_hardening_enabled=false here unless this
+# project is the only one managing the machine.
+
+# --- SSH connection identities (non-secret; passwords stay in vault.yml) ------
+# Probed in order [iac, admin, root] by `make host-bootstrap`;
+# build/info connect as `iac`. Each identity takes its password from the shared vault
+# and/or a key path here (SSH prefers the key; empty = not used). A pubkey path
+# is authorized for that account during bootstrap. The optional human 'admin'
+# account exists only while create_admin_account is true: it always gets a
+# password (generated into the shared vault when empty) plus any configured key;
+# false manages no admin account (least privilege).
+create_admin_account: false
+host_admin_username: "admin"
+host_iac_ssh_pubkey_file: ""
+host_iac_ssh_privkey_file: ""
+host_admin_ssh_pubkey_file: ""
+host_admin_ssh_privkey_file: ""
+host_root_ssh_pubkey_file: ""
+host_root_ssh_privkey_file: ""
+
+# --- 'iac' automation account (created by `make host-bootstrap`) --------------
+# Fixed service uid/gid; project-wide automation accounts use 6000-6499.
+iac_uid: 6000
+iac_gid: 6000
+
+# --- Host security (role sshd; make build EXTRA='--tags sshd') ------------------
+# Key-only SSH administration, OFF by default: it closes password login, so it is
+# only safe once a keyed login survives it. Root policy is independent.
+sshd_hardening_enabled: false
+sshd_permit_root_login: "no"
