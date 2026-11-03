@@ -1,0 +1,10 @@
+---
+rules:
+  empty-lines:
+    max-end: 0
+
+ignore:
+  - "collections/"
+  - ".ansible/"
+  - ".cache/"
+  - "inventory/host_vars/*/vault.yml"

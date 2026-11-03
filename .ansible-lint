@@ -1,0 +1,20 @@
+---
+exclude_paths:
+  - collections/
+  - .ansible/
+  - inventory/
+  - .cache/
+  - .build/
+  - .github/
+  - docs/
+  - artifacts/
+
+offline: true
+
+skip_list:
+  - yaml[comments]
+  - yaml[braces]
+  - var-naming[no-role-prefix]
+
+warn_list:
+  - yaml[document-start]
