@@ -60,18 +60,19 @@ cp -a .config /work/config.final
 log "make download"
 make -j"${OPENWRT_JOBS}" download
 
-log "make world"
-make -j"${OPENWRT_JOBS}" world
-
-log "make image"
-make_args=(PROFILE="${OPENWRT_PROFILE}" PACKAGES="${OPENWRT_PACKAGES}" FILES="files")
+# `world` compiles and installs everything, builds the images (target/install)
+# and applies the overlay from <tree>/files, which include/image.mk reads
+# directly; the separate `make image` target these refs used to expose no longer
+# exists. Only the image-name prefix is passed here: `FILES=` is the kernel-module
+# list in include/kernel.mk, and `ROOTFS_PARTSIZE=` overrides the byte value
+# image.mk derives from CONFIG_TARGET_ROOTFS_PARTSIZE (which config.j2 sets).
+make_args=()
 if [ -n "${OPENWRT_EXTRA_FIRMWARE_NAME:-}" ]; then
     make_args+=(EXTRA_IMAGE_NAME="${OPENWRT_EXTRA_FIRMWARE_NAME}")
 fi
-if [ -n "${OPENWRT_ROOTFS_PARTSIZE:-}" ]; then
-    make_args+=(ROOTFS_PARTSIZE="${OPENWRT_ROOTFS_PARTSIZE}")
-fi
-make image -j"${OPENWRT_JOBS}" "${make_args[@]}" -S
+
+log "make world"
+make -j"${OPENWRT_JOBS}" world "${make_args[@]}"
 
 log "verify the kernel configuration"
 kernel_config=$(find build_dir -maxdepth 4 -type f -name .config -path '*linux-*' | head -n1)

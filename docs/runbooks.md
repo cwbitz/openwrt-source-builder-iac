@@ -81,7 +81,7 @@ make deploy                           # host-bootstrap, then build (fresh host t
 `build_variants`, so machines build concurrently and a machine's variants
 sequentially. The first full build compiles the toolchain, the kernel and every
 package (tens of minutes); later runs reuse the cached source tree, `dl/` and
-`ccache/`, so the incremental `make image` is minutes. See
+`ccache/`, so an incremental `make world` is minutes. See
 [build-pipeline](build-pipeline.md) for the per-variant steps, container
 orchestration and overlay rendering.
 

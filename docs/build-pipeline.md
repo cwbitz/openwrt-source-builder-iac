@@ -29,7 +29,7 @@ per variant and are individually selectable with `--tags`
 6. **overlay** — renders the enabled modules' uci-defaults, the `network` block
    and the variant's `custom_overlay`, and installs them as `<src>/files/`.
 7. **build** — runs the pinned build container (`defconfig` → `download` →
-   `world` → `image`), then asserts the requested kernel options survived, the
+   `world`), then asserts the requested kernel options survived, the
    kernel config carries them, `.BTF` exists when requested, and removed packages
    are absent from `.manifest`.
 8. **fetch** — copies `bin/targets/...` to the control node; the scratch work
@@ -123,13 +123,17 @@ build.
    re-derived from the dependency graph, so a missing option fails here instead of
    silently shipping a kernel without BTF/ftrace; the final config is copied to
    `/work/config.final`;
-4. `make download`, then `make world` (toolchain, kernel, packages);
-5. `make image` with the resolved profile, package list and `FILES="files"`, plus
-   the optional `EXTRA_IMAGE_NAME` and `ROOTFS_PARTSIZE`;
-6. verifies the kernel configuration carries each requested option, that
+4. `make download`, then `make world` (toolchain, kernel, packages, and the
+   images — `world` installs them, `make image` no longer exists on these refs),
+   passing only the `EXTRA_IMAGE_NAME` prefix; the rootfs overlay comes from
+   `<tree>/files`, which `include/image.mk` reads directly, and the rootfs size
+   comes from `CONFIG_TARGET_ROOTFS_PARTSIZE` in `.config` (`FILES=` would be read
+   as the kernel-module list, `ROOTFS_PARTSIZE=` would override the byte value
+   `image.mk` derives);
+5. verifies the kernel configuration carries each requested option, that
    `vmlinux` has a `.BTF` section when BTF was requested, and that every removed
    package is absent from the target's `.manifest`;
-7. lists the produced artifacts.
+6. lists the produced artifacts.
 
 An interrupted or failed `make build` cleans up after itself: the wrapper
 (`scripts/run-build.sh`) runs `playbooks/cleanup_build.yml`, force-removes the

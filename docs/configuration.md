@@ -328,7 +328,7 @@ administration:
 | `docker_registry_mirrors` | `[]` | Docker Hub pull-through mirrors written into the build host's `daemon.json` |
 
 A first full source build takes tens of minutes and roughly 30 GB
-(`build_dir` + `dl/` + `ccache/`); an incremental `make image` after that takes
+(`build_dir` + `dl/` + `ccache/`); an incremental `make world` after that takes
 minutes. `make cache-clean PURGE=1` throws the source trees and `dl/` away, so the
 next build is full again.
 

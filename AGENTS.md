@@ -103,7 +103,8 @@ Task slices, individually selectable with `--tags`
    packages and removals, `CONFIG_DOWNLOAD_FOLDER`, `CONFIG_CCACHE`).
 5. **overlay** — renders the module uci-defaults + `custom_overlay` and installs
    them as `<src>/files/`.
-6. **build** — runs the pinned container (`download` → `world` → `image`), then
+6. **build** — runs the pinned container (`download` → `world`, which also
+   builds the images), then
    asserts the requested kernel options survived, the kernel config carries them,
    `.BTF` exists when requested, and removed packages are absent from `.manifest`.
 7. **fetch** — copies only `bin/targets/...` to
@@ -201,6 +202,6 @@ as `iac` and converges.
   checks, `gitleaks`) and `make test` (helper suite under `tests/`). Both run in
   CI on every change. CI never runs a real build.
 - **Manual** — a disposable build host checklist: first full build, a second run
-  at the same desired state, an incremental `make image`, and the on-device BTF
+  at the same desired state, an incremental `make world`, and the on-device BTF
   check (`/sys/kernel/btf/vmlinux`, `/sys/kernel/tracing`). Live hosts stay
   read-only.
