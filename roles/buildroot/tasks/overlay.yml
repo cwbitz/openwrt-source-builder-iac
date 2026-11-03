@@ -1,0 +1,171 @@
+---
+- name: Ensure the overlay working directory exists
+  ansible.builtin.file:
+    path: "{{ builder_workdir }}/files"
+    state: directory
+    mode: "0755"
+
+- name: Inventory the committed static overlay files
+  ansible.builtin.find:
+    paths: "{{ role_path }}/files/overlay"
+    file_type: file
+    recurse: true
+  delegate_to: localhost
+  become: false
+  vars:
+    ansible_become: false
+  register: overlay_static
+  failed_when: false
+
+- name: Inventory the committed templated overlay files
+  ansible.builtin.find:
+    paths: "{{ role_path }}/templates/overlay"
+    file_type: file
+    recurse: true
+  delegate_to: localhost
+  become: false
+  vars:
+    ansible_become: false
+  register: overlay_templates
+  failed_when: false
+
+- name: Resolve the overlay module set
+  ansible.builtin.set_fact:
+    overlay_modules: >-
+      {{ modules_active + (['network'] if (network | default({}) | length > 0) else []) }}
+
+- name: Select the overlay files of the active modules
+  ansible.builtin.set_fact:
+    overlay_static_active: >-
+      {{ overlay_static.files | default([])
+         | selectattr('path', 'search', '/files/overlay/(' ~ overlay_modules_re ~ ')/')
+         | list }}
+    overlay_templates_active: >-
+      {{ overlay_templates.files | default([])
+         | selectattr('path', 'search', '/templates/overlay/(' ~ overlay_modules_re ~ ')/')
+         | list }}
+  vars:
+    overlay_modules_re: "{{ overlay_modules | join('|') }}"
+
+- name: Compute the overlay target names and directories
+  ansible.builtin.set_fact:
+    overlay_targets: >-
+      {{ (overlay_static_active | map(attribute='path')
+          | map('relpath', role_path ~ '/files/overlay') | map('regex_replace', '^[^/]+/', '') | list)
+         + (overlay_templates_active | map(attribute='path')
+            | map('relpath', role_path ~ '/templates/overlay') | map('regex_replace', '^[^/]+/', '') | list) }}
+    overlay_dirs: >-
+      {{ ((overlay_static_active | map(attribute='path')
+           | map('relpath', role_path ~ '/files/overlay') | map('regex_replace', '^[^/]+/', '') | map('dirname') | list)
+          + (overlay_templates_active | map(attribute='path')
+             | map('relpath', role_path ~ '/templates/overlay') | map('regex_replace', '^[^/]+/', '') | map('dirname') | list))
+         | unique }}
+
+- name: Assert no two active modules ship the same overlay file
+  ansible.builtin.assert:
+    that:
+      - overlay_targets | length == overlay_targets | unique | length
+    fail_msg: >-
+      Duplicate overlay target files across modules: {{ overlay_targets }}.
+
+- name: Ensure the overlay target directories exist
+  ansible.builtin.file:
+    path: "{{ builder_workdir }}/files/{{ item }}"
+    state: directory
+    mode: "0755"
+  loop: "{{ overlay_dirs }}"
+
+- name: Install the static overlay files of the active modules
+  ansible.builtin.copy:
+    src: "{{ item.path | relpath(role_path ~ '/files') }}"
+    dest: "{{ builder_workdir }}/files/{{ overlay_rel }}"
+    mode: "{{ '0755' if (overlay_rel.startswith('etc/uci-defaults/') or overlay_rel.startswith('etc/hotplug.d/')) else '0644' }}"
+  vars:
+    overlay_rel: >-
+      {{ item.path | relpath(role_path ~ '/files/overlay') | regex_replace('^[^/]+/', '') }}
+  loop: "{{ overlay_static_active }}"
+
+- name: Render the templated overlay files of the active modules
+  ansible.builtin.template:
+    src: "{{ item.path | relpath(role_path ~ '/templates') }}"
+    dest: "{{ builder_workdir }}/files/{{ overlay_rel }}"
+    mode: "{{ '0755' if (overlay_rel.startswith('etc/uci-defaults/') or overlay_rel.startswith('etc/hotplug.d/')) else '0644' }}"
+  vars:
+    overlay_rel: >-
+      {{ item.path | relpath(role_path ~ '/templates/overlay') | regex_replace('^[^/]+/', '') }}
+  loop: "{{ overlay_templates_active }}"
+  no_log: true
+
+- name: Check the custom overlay directory
+  ansible.builtin.stat:
+    path: "{{ custom_overlay }}"
+  delegate_to: localhost
+  become: false
+  vars:
+    ansible_become: false
+  register: custom_overlay_stat
+  when: custom_overlay | length > 0
+
+- name: Assert the custom overlay directory exists
+  ansible.builtin.assert:
+    that:
+      - custom_overlay_stat.stat.isdir | default(false)
+    fail_msg: >-
+      custom_overlay '{{ custom_overlay }}' is not a directory on the control
+      node.
+  when: custom_overlay | length > 0
+
+- name: Install the variant custom overlay
+  ansible.builtin.copy:
+    src: "{{ custom_overlay | regex_replace('/+$', '') }}/"
+    dest: "{{ builder_workdir }}/files/"
+    mode: preserve
+  when: custom_overlay | length > 0
+
+- name: Show the rendered overlay files
+  ansible.builtin.debug:
+    msg: "{{ overlay_targets }}"
+
+- name: Ensure the uci-defaults directory of the overlay exists
+  ansible.builtin.file:
+    path: "{{ builder_workdir }}/files/etc/uci-defaults"
+    state: directory
+    mode: "0755"
+
+- name: Render the disabled-services first-boot script
+  ansible.builtin.copy:
+    content: |
+      #!/bin/sh
+      # Generated by openwrt-source-builder-iac. A from-source build has no
+      # DISABLED_SERVICES make variable, so the init scripts are disabled here
+      # at first boot instead of being removed at image-build time.
+      {% for service in disabled_services.split() %}
+      [ -x /etc/init.d/{{ service }} ] && /etc/init.d/{{ service }} disable
+      {% endfor %}
+      exit 0
+    dest: "{{ builder_workdir }}/files/etc/uci-defaults/99-disabled-services"
+    mode: "0755"
+  when: (disabled_services | default('') | string | length) > 0
+
+- name: Remove the source tree's previous overlay
+  ansible.builtin.file:
+    path: "{{ source_dir }}/files"
+    state: absent
+
+- name: Install the rendered overlay into the source tree
+  ansible.builtin.copy:
+    src: "{{ builder_workdir }}/files/"
+    dest: "{{ source_dir }}/files/"
+    remote_src: true
+    mode: preserve
+
+- name: Show the installed overlay files
+  ansible.builtin.find:
+    paths: "{{ source_dir }}/files"
+    file_type: file
+    recurse: true
+  register: overlay_installed
+
+- name: Report the installed overlay files
+  ansible.builtin.debug:
+    msg: "{{ overlay_installed.files | map(attribute='path') | map('relpath', source_dir) | list }}"

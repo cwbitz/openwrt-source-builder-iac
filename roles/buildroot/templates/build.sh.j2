@@ -1,0 +1,94 @@
+#!/bin/bash
+set -euo pipefail
+
+# Runs inside the pinned build container (roles/buildroot/files/Dockerfile).
+# Everything that does not need the toolchain was prepared on the build host:
+# the cached source tree, the feeds, .config, the rendered `files/` overlay and
+# the shared dl/ + ccache/ caches. This script owns defconfig, the compile and
+# the verification, because those are the steps that need the toolchain.
+
+cd /build
+export TMPDIR=/tmp
+{% if source.ccache | default(true) | bool %}
+export CCACHE_DIR=/ccache
+{% endif %}
+
+log() { printf '>>> %s\n' "$*"; }
+
+{% if source.clean | default(false) | bool %}
+log "make clean (dl/ and ccache/ are kept)"
+make clean
+{% endif %}
+
+log "make defconfig"
+make -j"${OPENWRT_JOBS}" defconfig
+
+# defconfig re-derives the whole config from the dependency graph, so a requested
+# kernel option can disappear when its dependency is unmet. Fail here instead of
+# shipping a kernel without BTF/ftrace.
+dropped=0
+{% for option in source.kernel | default([]) %}
+grep -qxF '{{ option }}' .config \
+    || { printf 'ERROR: dropped by defconfig: %s\n' '{{ option }}' >&2; dropped=1; }
+{% endfor %}
+[ "$dropped" -eq 0 ] || exit 1
+
+cp -a .config /work/config.final
+
+log "make download"
+make -j"${OPENWRT_JOBS}" download
+
+log "make world"
+make -j"${OPENWRT_JOBS}" world
+
+log "make image"
+make_args=(PROFILE="${OPENWRT_PROFILE}" PACKAGES="${OPENWRT_PACKAGES}" FILES="files")
+if [ -n "${OPENWRT_EXTRA_FIRMWARE_NAME:-}" ]; then
+    make_args+=(EXTRA_IMAGE_NAME="${OPENWRT_EXTRA_FIRMWARE_NAME}")
+fi
+if [ -n "${OPENWRT_ROOTFS_PARTSIZE:-}" ]; then
+    make_args+=(ROOTFS_PARTSIZE="${OPENWRT_ROOTFS_PARTSIZE}")
+fi
+make image -j"${OPENWRT_JOBS}" "${make_args[@]}" -S
+
+log "verify the kernel configuration"
+kernel_config=$(find build_dir -maxdepth 4 -type f -name .config -path '*linux-*' | head -n1)
+if [ -z "$kernel_config" ]; then
+    echo "ERROR: no kernel .config found below build_dir" >&2
+    exit 1
+fi
+{% if source.kernel | default([]) | length > 0 %}
+kernel_options=( {% for option in source.kernel %}'{{ option }}' {% endfor %} )
+for option in "${kernel_options[@]}"; do
+    kernel_option="CONFIG_${option#CONFIG_KERNEL_}"
+    grep -qxF "$kernel_option" "$kernel_config" \
+        || { echo "ERROR: $kernel_option missing from $kernel_config" >&2; exit 1; }
+done
+{% endif %}
+
+{% if 'CONFIG_KERNEL_DEBUG_INFO_BTF=y' in source.kernel | default([]) %}
+log "verify the BTF section"
+vmlinux=$(find build_dir -maxdepth 5 -type f -name vmlinux | head -n1)
+if [ -z "$vmlinux" ]; then
+    echo "ERROR: vmlinux not found; cannot verify BTF" >&2
+    exit 1
+fi
+readelf -S "$vmlinux" | grep -q '\.BTF' \
+    || { echo "ERROR: $vmlinux carries no .BTF section" >&2; exit 1; }
+{% endif %}
+
+log "verify the removed packages are absent from the image"
+manifest=$(find bin/targets -maxdepth 3 -type f -name '*.manifest' | head -n1)
+if [ -n "$manifest" ]; then
+{% for package in packages_final_list | default([]) | select('match', '^-') %}
+    if grep -q '^{{ package[1:] }} ' "$manifest"; then
+        echo "ERROR: package removed by the variant is still in the image: {{ package[1:] }}" >&2
+        exit 1
+    fi
+{% endfor %}
+else
+    echo "WARNING: no .manifest produced; skipped the removed-package check" >&2
+fi
+
+log "artifacts"
+find bin/targets -maxdepth 3 -type f -printf '%10s  %p\n' | sort -k2

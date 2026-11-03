@@ -1,0 +1,44 @@
+---
+- name: Locate the generated artifacts on the builder
+  ansible.builtin.find:
+    paths: "{{ output_dir }}/targets"
+    file_type: file
+    recurse: true
+  register: build_artifacts
+  failed_when: false
+
+- name: Assert the build produced artifacts
+  ansible.builtin.assert:
+    that:
+      - build_artifacts.files | default([]) | length > 0
+    fail_msg: >-
+      No files below {{ output_dir }}/targets for {{ build_id }}. The compile may
+      have failed after a successful container exit, or the target layout moved.
+
+- name: Compute the artifact paths relative to the output directory
+  ansible.builtin.set_fact:
+    artifact_relpaths: >-
+      {{ build_artifacts.files | map(attribute='path')
+         | map('relpath', output_dir) | list }}
+
+- name: Ensure the control-node artifact directories exist
+  ansible.builtin.file:
+    path: "{{ artifacts_dir }}/{{ item }}"
+    state: directory
+    mode: "0755"
+  loop: "{{ artifact_relpaths | map('dirname') | unique | list }}"
+  delegate_to: localhost
+  become: false
+  vars:
+    ansible_become: false
+
+- name: Fetch the generated artifacts to the control node
+  ansible.builtin.fetch:
+    src: "{{ output_dir }}/{{ item }}"
+    dest: "{{ artifacts_dir }}/{{ item }}"
+    flat: true
+  loop: "{{ artifact_relpaths }}"
+
+- name: Report where the artifacts were delivered
+  ansible.builtin.debug:
+    msg: "Artifacts fetched to {{ artifacts_dir }}"

@@ -1,0 +1,61 @@
+---
+- name: Assert the package list is a sequence
+  ansible.builtin.assert:
+    that:
+      - packages is sequence
+      - packages is not string
+    fail_msg: "packages must be a YAML list of package names."
+
+- name: Resolve the statistics package set
+  ansible.builtin.set_fact:
+    statistics_packages: >-
+      {{ (['luci-app-statistics']
+          + (['collectd-mod-sensors'] if (statistics.sensors | bool) else [])
+          + (['collectd-mod-irq'] if (statistics.irq | bool) else []))
+         if ('statistics' in modules_active) else [] }}
+
+- name: Remove module-managed packages from the operator list
+  ansible.builtin.set_fact:
+    packages_operator: >-
+      {{ packages | default([])
+         | reject('in', statistics_packages)
+         | reject('in', statistics_packages | map('regex_replace', '^', '-') | list)
+         | list }}
+
+- name: Merge module-managed packages
+  ansible.builtin.set_fact:
+    packages_merged: "{{ packages_operator + statistics_packages }}"
+
+- name: Deduplicate the package list (order preserving)
+  ansible.builtin.set_fact:
+    packages_final_list: "{{ packages_merged | unique }}"
+
+- name: Detect packages that are both added and removed
+  ansible.builtin.set_fact:
+    package_conflicts: >-
+      {{ packages_final_list
+         | select('match', '^-')
+         | map('regex_replace', '^-', '')
+         | select('in', packages_final_list)
+         | list }}
+
+- name: Assert there are no package conflicts
+  ansible.builtin.assert:
+    that:
+      - package_conflicts | length == 0
+    fail_msg: >-
+      Packages are both added and removed:
+      {{ package_conflicts | join(', ') }}.
+
+- name: Render the final PACKAGES string
+  ansible.builtin.set_fact:
+    packages_final: "{{ packages_final_list | join(' ') }}"
+
+- name: Show the resolved package list
+  ansible.builtin.debug:
+    msg: "PACKAGES={{ packages_final }}"
+
+- name: Resolve the package list handed to `make image`
+  ansible.builtin.set_fact:
+    packages_image: >-
+      {{ packages_final_list | default([]) | reject('search', '^-') | list | join(' ') }}

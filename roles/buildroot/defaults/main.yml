@@ -1,0 +1,32 @@
+---
+# The variant's `source` block, resolved once. Every other source setting is
+# derived from it (see tasks/preflight.yml) so there is a single definition.
+source: "{{ (build_variant | default({})).source | default({}) }}"
+
+target_profile: "{{ (build_variant | default({})).target_profile | default('') }}"
+packages: "{{ (build_variant | default({})).packages | default([]) }}"
+custom_overlay: "{{ (build_variant | default({})).custom_overlay | default('') }}"
+network: "{{ (build_variant | default({})).network | default({}) }}"
+system:
+  hostname: "{{ ((build_variant | default({})).system | default({})).hostname | default('') }}"
+  timezone: "{{ ((build_variant | default({})).system | default({})).timezone | default('CST-8') }}"
+  zonename: "{{ ((build_variant | default({})).system | default({})).zonename | default('Asia/Shanghai') }}"
+statistics:
+  interfaces: "{{ ((build_variant | default({})).statistics | default({})).interfaces | default([]) }}"
+  sensors: "{{ ((build_variant | default({})).statistics | default({})).sensors | default(false) }}"
+  irq: "{{ ((build_variant | default({})).statistics | default({})).irq | default(false) }}"
+  rrd_timespans: "{{ ((build_variant | default({})).statistics | default({})).rrd_timespans | default(['2hour', '1day', '1week', '1month', '1year']) }}"
+administration:
+  root_password: "{{ ((build_variant | default({})).administration | default({})).root_password | default('') }}"
+  ssh:
+    interface: "{{ (((build_variant | default({})).administration | default({})).ssh | default({})).interface | default('') }}"
+    port: "{{ (((build_variant | default({})).administration | default({})).ssh | default({})).port | default('') }}"
+extra_firmware_name: "{{ (build_variant | default({})).extra_firmware_name | default('') }}"
+disabled_services: "{{ (build_variant | default({})).disabled_services | default('') }}"
+rootfs_partsize: "{{ (build_variant | default({})).rootfs_partsize | default('') }}"
+
+build_dir: "{{ ansible_facts.user_dir }}/.cache/openwrt-builder"
+artifacts_dir: "{{ project_root }}/artifacts/{{ build_id }}"
+
+# Refuse to start a build below this much free space on the builder.
+source_min_free_gb: 25

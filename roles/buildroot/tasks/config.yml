@@ -1,0 +1,14 @@
+---
+- name: Render the build configuration fragment
+  ansible.builtin.template:
+    src: config.j2
+    dest: "{{ source_dir }}/.config"
+    mode: "0644"
+
+- name: Report the requested configuration
+  ansible.builtin.debug:
+    msg:
+      - "Target {{ source.target }} device {{ target_profile }}"
+      - "Packages: {{ packages_image | default('') }}"
+      - "Removals: {{ packages_final_list | default([]) | select('match', '^-') | list }}"
+      - "Kernel: {{ source_kernel | default([]) }}"

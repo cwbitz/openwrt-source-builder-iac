@@ -1,0 +1,46 @@
+---
+- name: Check the build host prerequisites and required settings
+  ansible.builtin.import_tasks: preflight.yml
+  tags: [preflight]
+
+- name: Resolve the active module set
+  ansible.builtin.import_tasks: modules.yml
+  tags: [modules]
+
+- name: Collect and validate the package list
+  ansible.builtin.import_tasks: packages.yml
+  tags: [packages]
+
+- name: Fetch, configure, build and collect the firmware image
+  block:
+    - name: Remove the stale scratch before building
+      ansible.builtin.import_tasks: cleanup.yml
+      vars:
+        cleanup_remove_bin: true
+
+    - name: Prepare the source tree, feeds and build image
+      ansible.builtin.import_tasks: setup.yml
+      tags: [setup]
+
+    - name: Write the build configuration
+      ansible.builtin.import_tasks: config.yml
+      tags: [config]
+
+    - name: Render the uci-defaults overlay
+      ansible.builtin.import_tasks: overlay.yml
+      tags: [overlay]
+
+    - name: Build the firmware image
+      ansible.builtin.import_tasks: build.yml
+      tags: [build]
+
+    - name: Fetch the generated artifacts
+      ansible.builtin.import_tasks: artifact_fetch.yml
+      tags: [fetch]
+
+    - name: Record the build metadata
+      ansible.builtin.import_tasks: record.yml
+      tags: [record]
+  always:
+    - name: Remove the scratch work directory
+      ansible.builtin.import_tasks: cleanup.yml

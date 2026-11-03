@@ -1,0 +1,19 @@
+---
+galaxy_info:
+  author: cwbitz
+  company: ""
+  license: MIT
+  description: >-
+    OpenWrt firmware builder role: resolves modules, collects packages, renders
+    the uci-defaults overlay and drives a from-source buildroot build (toolchain,
+    kernel, packages, image) inside a pinned build container
+  min_ansible_version: "2.16"
+  galaxy_tags:
+    - openwrt
+    - buildroot
+    - firmware
+  platforms:
+    - name: GenericLinux
+      versions:
+        - all
+dependencies: []

@@ -1,0 +1,110 @@
+---
+- name: Assert the variant carries a usable source block
+  ansible.builtin.assert:
+    that:
+      - source is mapping
+      - (source.ref | default('', true) | string | trim | length) > 0
+      - (source.ref | default('', true)) is not search('[<>]')
+      - (source.target | default('', true)) is match('^[a-z0-9_]+/[a-z0-9_]+$')
+      - (target_profile | default('', true) | string | trim | length) > 0
+      - target_profile is not search('[<>]')
+      - (source.kernel | default([]) | reject('string') | list | length) == 0
+    fail_msg: >-
+      Variant '{{ build_id }}' needs source.ref, source.target
+      (<target>/<subtarget>) and target_profile, with no example placeholder
+      left. Configure it under build_variants in
+      inventory/host_vars/<machine>/main.yml (copy host_vars/example/).
+
+- name: Resolve the source settings from the variant
+  ansible.builtin.set_fact:
+    source_repo_url: "{{ source.repo_url | default('https://git.openwrt.org/openwrt/openwrt.git') }}"
+    source_update: "{{ source.update | default(false) | bool }}"
+    source_clean: "{{ source.clean | default(false) | bool }}"
+    source_ccache: "{{ source.ccache | default(true) | bool }}"
+    source_build_image: "{{ source.build_image | default('openwrt-buildroot:debian13') }}"
+    source_kernel: "{{ source.kernel | default([]) }}"
+
+- name: Check the Docker CLI is available on the build host
+  ansible.builtin.command: docker --version
+  register: docker_cli
+  changed_when: false
+  failed_when: false
+
+- name: Assert the Docker CLI is available
+  ansible.builtin.assert:
+    that:
+      - docker_cli.rc == 0
+    fail_msg: >-
+      Docker CLI not found on {{ inventory_hostname }}. Every buildroot
+      dependency lives in the pinned build image, so the build host only needs
+      Docker (see roles/buildroot/files/Dockerfile).
+
+- name: Check the Docker daemon is reachable
+  ansible.builtin.command: docker info
+  register: docker_daemon
+  changed_when: false
+  failed_when: false
+
+- name: Assert the Docker daemon is reachable
+  ansible.builtin.assert:
+    that:
+      - docker_daemon.rc == 0
+    fail_msg: >-
+      Cannot reach the Docker daemon on {{ inventory_hostname }}. Start Docker
+      and ensure the connection user can access it.
+
+- name: Check the Docker Python SDK on the build host
+  ansible.builtin.command: >-
+    {{ ansible_python_interpreter | default('python3') }} -c 'import docker'
+  register: docker_sdk
+  changed_when: false
+  failed_when: false
+
+- name: Assert the Docker Python SDK is available on the build host
+  ansible.builtin.assert:
+    that:
+      - docker_sdk.rc == 0
+    fail_msg: >-
+      The community.docker modules need the 'docker' Python SDK on the build
+      host. Install it there, e.g.:
+      {{ ansible_python_interpreter | default('python3') }} -m pip install docker
+
+- name: Ensure the build cache root exists
+  ansible.builtin.file:
+    path: "{{ build_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Check the free space of the build cache volume
+  ansible.builtin.command:
+    argv: [df, -Pk, "{{ build_dir }}"]
+  register: build_free
+  changed_when: false
+
+- name: Assert the build cache volume has room for a full source build
+  vars:
+    free_gb: "{{ ((build_free.stdout_lines[1] | split())[3] | int) // 1048576 }}"
+  ansible.builtin.assert:
+    that:
+      - free_gb | int >= source_min_free_gb | int
+    fail_msg: >-
+      {{ inventory_hostname }}: only {{ free_gb }} GB free on the volume holding
+      {{ build_dir }}; a full source build needs at least
+      {{ source_min_free_gb }} GB (build_dir + dl/ + ccache/). Free space or
+      lower source_min_free_gb if you know better.
+
+- name: Derive the effective parallel job count
+  ansible.builtin.set_fact:
+    source_jobs_effective: >-
+      {{ (source.jobs | default('') | string)
+         if (source.jobs | default('') | string | length) > 0
+         else ([ansible_facts.processor_vcpus | int,
+                (ansible_facts.memtotal_mb | int) // 2048] | min) }}
+
+- name: Show the resolved build plan
+  ansible.builtin.debug:
+    msg:
+      - "Variant {{ build_id }}: {{ source_build_image }}"
+      - "Source {{ source_repo_url }} @ {{ source.ref }} -> {{ source.target }} ({{ target_profile }})"
+      - "Cache key {{ source_cache_key }} -> {{ source_dir }}"
+      - "Jobs {{ source_jobs_effective }} ({{ ansible_facts.processor_vcpus }} vCPU, {{ ansible_facts.memtotal_mb }} MB RAM)"

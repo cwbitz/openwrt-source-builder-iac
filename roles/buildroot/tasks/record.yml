@@ -1,0 +1,51 @@
+---
+- name: Ensure the control-node build-info directory exists
+  ansible.builtin.file:
+    path: "{{ artifacts_dir }}/build-info"
+    state: directory
+    mode: "0755"
+  delegate_to: localhost
+  become: false
+  vars:
+    ansible_become: false
+
+- name: Read the final build configuration
+  ansible.builtin.slurp:
+    src: "{{ builder_workdir }}/config.final"
+  register: source_final_config
+
+- name: Write the build metadata
+  ansible.builtin.copy:
+    content: "{{ source_metadata | to_nice_json }}\n"
+    dest: "{{ artifacts_dir }}/build-info/source.json"
+    mode: "0644"
+  vars:
+    ansible_become: false
+    source_metadata:
+      build_id: "{{ build_id }}"
+      build_run_id: "{{ build_run_id | default('') }}"
+      backend: source
+      build_image: "{{ source_build_image }}"
+      ref: "{{ source.ref }}"
+      repo_url: "{{ source_repo_url }}"
+      commit: "{{ source_fetched_commit.stdout | trim }}"
+      commit_info: "{{ source_commit_info.stdout | trim }}"
+      target: "{{ source.target }}"
+      profile: "{{ target_profile }}"
+      jobs: "{{ source_jobs_effective }}"
+      kernel: "{{ source_kernel | default([]) }}"
+      packages: "{{ packages_final_list | default([]) }}"
+      feeds: "{{ source_feeds.stdout | default('') | split('\n') | select | list }}"
+      config_sha256: "{{ source_final_config.content | b64decode | hash('sha256') }}"
+  delegate_to: localhost
+  become: false
+
+- name: Write the final build configuration
+  ansible.builtin.copy:
+    dest: "{{ artifacts_dir }}/build-info/config"
+    content: "{{ source_final_config.content | b64decode }}"
+    mode: "0644"
+  delegate_to: localhost
+  become: false
+  vars:
+    ansible_become: false

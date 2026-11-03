@@ -1,0 +1,26 @@
+# .config fragment rendered by roles/buildroot/tasks/config.yml and completed by
+# `make defconfig` inside the build container. Only the settings this project
+# owns are written here; everything else keeps the target's own defaults.
+CONFIG_TARGET_{{ source.target.split('/')[0] }}=y
+CONFIG_TARGET_{{ source.target.split('/')[0] }}_{{ source.target.split('/')[1] }}=y
+CONFIG_TARGET_{{ source.target.split('/')[0] }}_{{ source.target.split('/')[1] }}_DEVICE_{{ target_profile }}=y
+{% if rootfs_partsize %}
+CONFIG_TARGET_ROOTFS_PARTSIZE={{ rootfs_partsize }}
+{% endif %}
+{% if source.ccache | default(true) | bool %}
+CONFIG_CCACHE=y
+{% endif %}
+CONFIG_DOWNLOAD_FOLDER="/build/dl"
+{% for option in source.kernel | default([]) %}
+{{ option }}
+{% endfor %}
+# Variant packages. A '-' entry is written as an explicit "not set" instead of
+# ImageBuilder's PACKAGES="-pkg": the source tree has no such syntax, and the
+# explicit negative is what keeps the device profile's default out of the image.
+{% for package in packages_final_list | default([]) %}
+{% if package.startswith('-') %}
+# CONFIG_PACKAGE_{{ package[1:] }} is not set
+{% else %}
+CONFIG_PACKAGE_{{ package }}=y
+{% endif %}
+{% endfor %}

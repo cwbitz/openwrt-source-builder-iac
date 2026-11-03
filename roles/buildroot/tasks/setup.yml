@@ -1,0 +1,152 @@
+---
+- name: Ensure the shared cache directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - "{{ source_dir }}"
+    - "{{ source_dl_dir }}"
+    - "{{ source_ccache_dir }}"
+    - "{{ source_image_dir }}"
+
+- name: Install the pinned build environment definition
+  ansible.builtin.copy:
+    src: files/Dockerfile
+    dest: "{{ source_image_dir }}/Dockerfile"
+    mode: "0644"
+  register: source_dockerfile
+
+- name: Ensure the pinned build environment image is present
+  community.docker.docker_image:
+    name: "{{ source_build_image.split(':')[0] }}"
+    tag: "{{ source_build_image.split(':')[1] }}"
+    source: build
+    build:
+      path: "{{ source_image_dir }}"
+      pull: false
+    force_source: "{{ source_dockerfile is changed }}"
+    state: present
+
+- name: Initialize the source tree repository
+  ansible.builtin.command:
+    argv: [git, init, "{{ source_dir }}"]
+    creates: "{{ source_dir }}/.git/HEAD"
+
+- name: Read the configured origin URL
+  ansible.builtin.command:
+    argv: [git, -C, "{{ source_dir }}", remote, get-url, origin]
+  register: source_origin
+  changed_when: false
+  failed_when: false
+
+- name: Point origin at the configured repository
+  ansible.builtin.command:
+    argv:
+      - git
+      - -C
+      - "{{ source_dir }}"
+      - remote
+      - "{{ 'set-url' if source_origin.rc == 0 else 'add' }}"
+      - origin
+      - "{{ source_repo_url }}"
+  when: source_origin.rc != 0 or (source_origin.stdout | trim) != source_repo_url
+  changed_when: true
+
+- name: Read the currently checked-out commit
+  ansible.builtin.command:
+    argv: [git, -C, "{{ source_dir }}", rev-parse, HEAD]
+  register: source_head_before
+  changed_when: false
+  failed_when: false
+
+- name: Fetch the requested ref (shallow)
+  ansible.builtin.command:
+    argv: [git, -C, "{{ source_dir }}", fetch, --depth, "1", origin, "{{ source.ref }}"]
+  register: source_fetch
+  changed_when: false
+  failed_when: false
+
+- name: Fetch the requested ref (full, for a commit the server will not serve shallow)
+  ansible.builtin.command:
+    argv: [git, -C, "{{ source_dir }}", fetch, origin, "{{ source.ref }}"]
+  register: source_fetch_full
+  changed_when: false
+  failed_when: false
+  when: source_fetch.rc != 0
+
+- name: Fetch the whole history (last resort)
+  ansible.builtin.command:
+    argv: [git, -C, "{{ source_dir }}", fetch, --tags, origin]
+  register: source_fetch_deep
+  changed_when: false
+  failed_when: false
+  when: source_fetch.rc != 0 and source_fetch_full.rc | default(0) != 0
+
+- name: Assert the requested ref was fetched
+  ansible.builtin.assert:
+    that:
+      - >-
+        source_fetch.rc == 0
+        or (source_fetch_full.rc | default(1)) == 0
+        or (source_fetch_deep.rc | default(1)) == 0
+    fail_msg: >-
+      Cannot fetch '{{ source.ref }}' from {{ source_repo_url }} into
+      {{ source_dir }}. Check the ref (tag/branch/commit) and network access.
+
+- name: Resolve the fetched commit
+  ansible.builtin.command:
+    argv: [git, -C, "{{ source_dir }}", rev-parse, FETCH_HEAD]
+  register: source_fetched_commit
+  changed_when: false
+
+- name: Check out the resolved commit
+  ansible.builtin.command:
+    argv: [git, -C, "{{ source_dir }}", checkout, --force, --detach, "{{ source_fetched_commit.stdout | trim }}"]
+  when: >-
+    (source_head_before.rc | default(1)) != 0
+    or (source_head_before.stdout | trim) != (source_fetched_commit.stdout | trim)
+  changed_when: true
+
+- name: Read the resolved commit, tag and date
+  ansible.builtin.command:
+    argv: [git, -C, "{{ source_dir }}", show, -s, --format=%H %d %cI, "HEAD"]
+  register: source_commit_info
+  changed_when: false
+
+- name: Update the feeds (cloned tree or an explicit refresh)
+  ansible.builtin.command:
+    argv: [./scripts/feeds, update, -a]
+    chdir: "{{ source_dir }}"
+  when: >-
+    (source_head_before.rc | default(1)) != 0
+    or source_update
+    or (source_head_before.stdout | trim) != (source_fetched_commit.stdout | trim)
+  changed_when: false
+
+- name: Install the feeds into the package tree
+  ansible.builtin.command:
+    argv: [./scripts/feeds, install, -a]
+    chdir: "{{ source_dir }}"
+  register: source_feeds_install
+  changed_when: >-
+    'installing' in (source_feeds_install.stdout | default(''))
+
+- name: Record the resolved feeds commits
+  ansible.builtin.shell:
+    cmd: |
+      set -eu
+      for dir in feeds/*/; do
+          [ -d "${dir}.git" ] || continue
+          printf '%s %s\n' "$(basename "$dir")" "$(git -C "$dir" rev-parse HEAD)"
+      done
+    chdir: "{{ source_dir }}"
+    executable: /bin/bash
+  register: source_feeds
+  changed_when: false
+
+- name: Show the resolved source state
+  ansible.builtin.debug:
+    msg:
+      - "HEAD {{ source_commit_info.stdout | trim }}"
+      - "Feeds {{ source_feeds.stdout | default('') | split('\n') }}"

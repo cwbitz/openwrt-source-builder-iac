@@ -1,0 +1,42 @@
+---
+- name: Check the build host prerequisites and required settings
+  ansible.builtin.import_tasks: preflight.yml
+
+- name: Check whether the cached source tree exists
+  ansible.builtin.stat:
+    path: "{{ source_dir }}/.git"
+  register: source_tree
+
+- name: Resolve the cached source revision
+  ansible.builtin.command:
+    argv: [git, -C, "{{ source_dir }}", describe, --tags, --always]
+  register: source_describe
+  changed_when: false
+  failed_when: false
+  when: source_tree.stat.isdir | default(false)
+
+- name: List the target's device profiles
+  ansible.builtin.shell:
+    cmd: |
+      set -euo pipefail
+      grep -rho '^define Profile/[^ ]*' "{{ source_dir }}/target/linux/{{ source.target }}/" \
+        | sed 's|^define Profile/||' | sort -u
+    executable: /bin/bash
+  register: source_profiles
+  changed_when: false
+  failed_when: false
+  when: source_tree.stat.isdir | default(false)
+
+- name: Show the build information
+  ansible.builtin.debug:
+    msg:
+      - "== {{ build_id }} =="
+      - "Source {{ source_repo_url }} @ {{ source.ref }}"
+      - "Target {{ source.target }} / profile {{ target_profile }}"
+      - "Build image {{ source_build_image }}"
+      - "Kernel options {{ source_kernel | default([]) }}"
+      - >-
+        Cached tree: {{ 'missing (run make build first)' if not
+        (source_tree.stat.isdir | default(false)) else (source_describe.stdout | trim) }}
+      - "Profiles {{ (source_profiles.stdout_lines | default([]))[:20] }}"
+  tags: [source_info]

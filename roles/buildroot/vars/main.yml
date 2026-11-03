@@ -1,0 +1,31 @@
+---
+project_root: "{{ playbook_dir | dirname }}"
+build_id: "{{ inventory_hostname }}-{{ (build_variant | default({})).name | default('') }}"
+builder_workdir: "{{ build_dir }}/work/{{ build_id }}"
+
+# The source tree is cached by (target, ref, kernel-option set): a different
+# kernel configuration forces a full kernel + kmod rebuild, so separate trees
+# keep one honest incremental build per configuration.
+source_target_slug: "{{ (source.target | default('')) | replace('/', '-') }}"
+source_ref_slug: "{{ (source.ref | default('')) | replace('/', '-') }}"
+source_kernel_digest: >-
+  {{ (source.kernel | default([]) | sort | join('\n') | hash('sha1'))[0:8] }}
+source_cache_key: >-
+  {{ source_target_slug ~ '-' ~ source_ref_slug ~ '-' ~ source_kernel_digest }}
+
+source_dir: "{{ build_dir }}/source/{{ source_cache_key }}"
+source_bin_dir: "{{ source_dir }}/bin"
+source_dl_dir: "{{ build_dir }}/dl"
+source_ccache_dir: "{{ build_dir }}/ccache"
+source_image_dir: "{{ build_dir }}/image"
+source_container_name: "openwrt-src-{{ build_id }}"
+
+output_dir: "{{ source_bin_dir }}"
+
+module_names:
+  - system
+  - statistics
+  - administration
+
+module_flags:
+  - disable-ipv6

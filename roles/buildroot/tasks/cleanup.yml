@@ -1,0 +1,11 @@
+---
+- name: Remove the scratch work directory
+  ansible.builtin.file:
+    path: "{{ builder_workdir }}"
+    state: absent
+
+- name: Remove the stale artifact staging of the previous build
+  ansible.builtin.file:
+    path: "{{ source_bin_dir }}"
+    state: absent
+  when: cleanup_remove_bin | default(false) | bool

@@ -1,0 +1,64 @@
+---
+- name: Ensure the scratch work directory exists
+  ansible.builtin.file:
+    path: "{{ builder_workdir }}"
+    state: directory
+    mode: "0755"
+
+- name: Render the in-container build script
+  ansible.builtin.template:
+    src: build.sh.j2
+    dest: "{{ builder_workdir }}/build.sh"
+    mode: "0755"
+
+- name: Announce the build
+  ansible.builtin.debug:
+    msg:
+      - "Building {{ build_id }} from {{ source.ref }} ({{ source.target }}, {{ target_profile }})."
+      - >-
+        A first full source build takes tens of minutes; the incremental image
+        step is minutes. The build log is printed when the container exits.
+
+- name: Build the firmware image in the pinned build container
+  community.docker.docker_container:
+    name: "{{ source_container_name }}"
+    image: "{{ source_build_image }}"
+    user: "{{ ansible_user_uid }}:{{ ansible_user_gid }}"
+    working_dir: /build
+    command: ["/bin/bash", "/work/build.sh"]
+    detach: false
+    cleanup: true
+    keep_volumes: false
+    output_logs: true
+    ulimits:
+      - "nofile:65536:65536"
+    labels:
+      openwrt-builder: "true"
+      openwrt-builder.backend: "source"
+      openwrt-builder.build-id: "{{ build_id }}"
+      openwrt-builder.run-id: "{{ build_run_id | default('') }}"
+    volumes:
+      - "{{ source_dir }}:/build"
+      - "{{ source_dl_dir }}:/build/dl"
+      - "{{ source_ccache_dir }}:/ccache"
+      - "{{ builder_workdir }}:/work"
+    env:
+      OPENWRT_JOBS: "{{ source_jobs_effective }}"
+      OPENWRT_PROFILE: "{{ target_profile }}"
+      OPENWRT_PACKAGES: "{{ packages_image | default('') }}"
+      OPENWRT_EXTRA_FIRMWARE_NAME: "{{ extra_firmware_name }}"
+      OPENWRT_ROOTFS_PARTSIZE: "{{ rootfs_partsize }}"
+  register: build_result
+
+- name: Show the build log
+  ansible.builtin.debug:
+    msg: "{{ build_result.container.Output | default('', true) | split('\n') }}"
+
+- name: Assert the build succeeded
+  ansible.builtin.assert:
+    that:
+      - build_result.status | default(1) | int == 0
+    fail_msg: >-
+      The build container exited with a non-zero status; review the build log
+      above (the compile, the defconfig assertions and the kernel verification
+      all fail here).
