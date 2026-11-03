@@ -14,6 +14,7 @@ Operational procedures for building OpenWrt firmware from source with
 | Build host | A separate LAN machine (by default) running Docker Engine; SSH-reachable as the connection user, who must access the Docker daemon |
 | sudo (or root) on the build host | Required on the first `make host-bootstrap` run to create the `iac` automation account |
 | Docker Engine / Desktop | Must be running on the `builders` host(s); the build toolchain itself lives in the pinned image |
+| GNU `make`, `perl`, `git` on the build host | `feeds update/install` runs outside the container, so the host needs these even though the compile does not |
 | Disk | ~30 GB free on the volume holding `~/.cache/openwrt-builder` (the preflight floor is `source_min_free_gb`, default 25) |
 | RAM | The effective job count is `min(vCPU, RAM-GB / 2)`; 8 GB is a practical minimum |
 | python >= 3.8 | Control node; runs `ansible-core` and the `community.docker` modules |

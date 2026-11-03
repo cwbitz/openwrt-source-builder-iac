@@ -69,6 +69,22 @@
       host. Install it there, e.g.:
       {{ ansible_python_interpreter | default('python3') }} -m pip install docker
 
+- name: Check GNU make is available on the build host
+  ansible.builtin.command: make --version
+  register: build_make
+  changed_when: false
+  failed_when: false
+
+- name: Assert GNU make is available on the build host
+  ansible.builtin.assert:
+    that:
+      - build_make.rc == 0
+    fail_msg: >-
+      GNU make not found on {{ inventory_hostname }}. The compile runs in the
+      pinned build image, but `scripts/feeds update/install` runs on the host and
+      needs make (perl and git are needed there too). Install it in the Debian
+      family with: sudo apt-get install -y make
+
 - name: Ensure the build cache root exists
   ansible.builtin.file:
     path: "{{ build_dir }}"
