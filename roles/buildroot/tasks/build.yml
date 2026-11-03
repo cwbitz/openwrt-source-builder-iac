@@ -43,7 +43,7 @@
       - "{{ source_ccache_dir }}:/ccache"
       - "{{ builder_workdir }}:/work"
     env:
-      OPENWRT_JOBS: "{{ source_jobs_effective }}"
+      OPENWRT_JOBS: "{{ source_jobs_effective | string }}"
       OPENWRT_PROFILE: "{{ target_profile }}"
       OPENWRT_PACKAGES: "{{ packages_image | default('') }}"
       OPENWRT_EXTRA_FIRMWARE_NAME: "{{ extra_firmware_name }}"
