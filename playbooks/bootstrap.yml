@@ -62,6 +62,7 @@
             dest: "{{ probe_credentials_dir }}/{{ inventory_hostname }}.env"
             mode: "0600"
           no_log: true
+          changed_when: false
 
         - name: "[Probe] Try each identity over SSH"
           ansible.builtin.shell: |
@@ -145,6 +146,7 @@
             path: "{{ probe_credentials_dir }}/{{ inventory_hostname }}.env"
             state: absent
           no_log: true
+          changed_when: false
 
 - name: Bootstrap the build machines (service + admin accounts, keys, sudo)
   hosts: builders
