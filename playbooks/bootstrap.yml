@@ -121,7 +121,7 @@
             fail_msg: >-
               {{ inventory_hostname }}: could not log in as iac, admin or
               root with the configured credentials. Check
-              inventory/group_vars/builders/vault.yml
+              inventory/host_vars/{{ inventory_hostname }}/vault.yml
               (vault_host_{iac,admin,root}_password),
               inventory/group_vars/builders/main.yml
               (host_{iac,admin,root}_ssh_privkey_file) and the host.
@@ -299,7 +299,7 @@
           vault carries no vault_host_admin_password. Generating one here would
           rotate the password away from the project that owns the account.
           Copy the same value into both vaults (make vault-view in the owning
-          project, then make vault-edit-group here), or set
+          project, then make vault-edit here), or set
           create_admin_account: false in this project.
       when:
         - bootstrap_admin_defined | bool
@@ -388,10 +388,12 @@
         fail_msg: |-
           {{ inventory_hostname }}: the '{{ bootstrap_admin.user }}' password on
           this machine does not match vault_host_admin_password in this project's
-          vault. Two IaC projects manage this host, and rotating the password
-          here would break the other one.
-          Align the value in both vaults, or set create_admin_account: false in
-          this project.
+          vault. This is expected after the machine was re-created (cloud-init
+          set the password) or when another IaC project owns the account, and
+          rewriting it here would lock that owner out.
+          Fix: put the machine's current password (or the same value the owning
+          project uses) into this project's vault and re-run, or set
+          create_admin_account: false in this project.
       when:
         - bootstrap_admin_defined | bool
         - bootstrap_admin.user != 'root'
@@ -560,5 +562,5 @@
           account '{{ bootstrap_service_user }}'{{ " and admin account '" ~
           bootstrap_admin.user ~ "'" if bootstrap_admin_defined | bool else "" }}
           should exist; subsequent runs connect as 'iac' with the
-          credentials in inventory/group_vars/builders/vault.yml and the key
+          credentials in inventory/host_vars/{{ inventory_hostname }}/vault.yml and the key
           paths in inventory/group_vars/builders/main.yml.
