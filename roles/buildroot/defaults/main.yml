@@ -26,7 +26,14 @@ disabled_services: "{{ (build_variant | default({})).disabled_services | default
 rootfs_partsize: "{{ (build_variant | default({})).rootfs_partsize | default('') }}"
 
 build_dir: "{{ ansible_facts.user_dir }}/.cache/openwrt-builder"
-artifacts_dir: "{{ project_root }}/artifacts/{{ build_id }}"
+# Control-node artifact directory. The name carries the backend, the target and
+# the pinned ref, so a directory stays self-describing even when two IaC
+# projects build the same machine with the same variant name.
+artifact_id: >-
+  {{ [build_id, 'source',
+      (source.target | default('unknown', true)) | replace('/', '-'),
+      (source.ref | default('unknown', true)) | replace('/', '-')] | join('-') }}
+artifacts_dir: "{{ project_root }}/artifacts/{{ artifact_id }}"
 
 # Refuse to start a build below this much free space on the builder.
 source_min_free_gb: 25
