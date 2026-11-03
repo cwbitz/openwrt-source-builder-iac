@@ -75,7 +75,7 @@ log "make world"
 make -j"${OPENWRT_JOBS}" world "${make_args[@]}"
 
 log "verify the kernel configuration"
-kernel_config=$(find build_dir -maxdepth 4 -type f -name .config -path '*linux-*' | head -n1)
+kernel_config=$(find build_dir/target-*/linux-* -maxdepth 2 -type f -name .config | head -n1)
 if [ -z "$kernel_config" ]; then
     echo "ERROR: no kernel .config found below build_dir" >&2
     exit 1
