@@ -68,12 +68,16 @@ build_variants:
       build_image: openwrt-buildroot:debian13-r2
       kernel:                       # asserted again after `make defconfig`
         - CONFIG_KERNEL_DEBUG_INFO_BTF=y
+        - CONFIG_KERNEL_DEBUG_INFO_REDUCED=n
     target_profile: <profile>
 ```
 
-- **`source.kernel`** entries must be `CONFIG_<NAME>=y|m`. A value dropped by
+- **`source.kernel`** entries must be `CONFIG_<NAME>=y|m|n`. A value dropped by
   `make defconfig` fails the build instead of silently shipping a kernel without
-  it (that is how BTF/ftrace would otherwise vanish).
+  it (that is how BTF/ftrace would otherwise vanish). `=n` is matched against the
+  `# CONFIG_<NAME> is not set` line kconfig writes back; BTF needs it for
+  `KERNEL_DEBUG_INFO_REDUCED`, which defaults to `y` and would otherwise drop
+  `KERNEL_DEBUG_INFO_BTF`.
 - **`packages`** with a `-` prefix is written as `# CONFIG_PACKAGE_x is not set`
   (the source tree has no ImageBuilder `PACKAGES="-pkg"` syntax), and the build
   asserts the package is absent from the generated `.manifest`.

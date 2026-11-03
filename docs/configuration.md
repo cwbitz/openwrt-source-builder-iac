@@ -73,7 +73,9 @@ source:
   ccache: true
   build_image: openwrt-buildroot:debian13-r2
   kernel:
+    - CONFIG_KERNEL_DEBUG_INFO=y
     - CONFIG_KERNEL_DEBUG_INFO_BTF=y
+    - CONFIG_KERNEL_DEBUG_INFO_REDUCED=n
 ```
 
 | Key | Default | Meaning |
@@ -111,6 +113,18 @@ asserted twice:
 2. after the build — the generated kernel `.config` must carry
    `CONFIG_<name without CONFIG_KERNEL_>`; when BTF was requested, `vmlinux` must
    actually have a `.BTF` section.
+
+`=n` is a real value: kconfig writes it back as `# CONFIG_<name> is not set`, and
+that is the line both assertions look for. It matters for BTF, whose
+`KERNEL_DEBUG_INFO_BTF` depends on `!KERNEL_DEBUG_INFO_REDUCED`, while
+`KERNEL_DEBUG_INFO_REDUCED` defaults to `y` — a BTF variant therefore has to ask
+for `CONFIG_KERNEL_DEBUG_INFO_REDUCED=n` as well.
+
+`make defconfig` runs serially: the prerequisite checks it triggers share one
+`$(TMP_DIR)`, so parallel jobs report the host compilers and tools as broken. The
+first run on a fresh tree can still fail its aggregated prerequisite report
+spuriously, so the build retries `defconfig` once and fails only if both attempts
+fail.
 
 This is the reason to build from source: the official ImageBuilder cannot change
 the kernel configuration at all. A custom kernel changes the module ABI, so

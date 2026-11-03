@@ -20,16 +20,38 @@ log "make clean (dl/ and ccache/ are kept)"
 make clean
 {% endif %}
 
+# defconfig stays serial: the prerequisite checks it triggers build and run their
+# test programs under one shared $(TMP_DIR), so parallel jobs clobber each other
+# and report the host compilers and tools as broken. The first run on a fresh tree
+# can still fail its aggregated prerequisite report spuriously (the same checks
+# pass on the immediate retry), so allow one retry — a genuinely missing tool
+# fails both attempts.
 log "make defconfig"
-make -j"${OPENWRT_JOBS}" defconfig
+attempt=1
+until make defconfig; do
+    if [ "$attempt" -ge 2 ]; then
+        echo "ERROR: make defconfig failed on both attempts" >&2
+        exit 1
+    fi
+    echo ">>> retrying make defconfig after a failed first run"
+    attempt=$((attempt + 1))
+done
 
 # defconfig re-derives the whole config from the dependency graph, so a requested
 # kernel option can disappear when its dependency is unmet. Fail here instead of
-# shipping a kernel without BTF/ftrace.
+# shipping a kernel without BTF/ftrace. A `=n` entry is written back by kconfig as
+# its `# ... is not set` comment, so that is what gets asserted.
 dropped=0
 {% for option in source.kernel | default([]) %}
-grep -qxF '{{ option }}' .config \
-    || { printf 'ERROR: dropped by defconfig: %s\n' '{{ option }}' >&2; dropped=1; }
+{% if option.endswith('=n') %}
+if ! grep -qxF '# {{ option[:-2] }} is not set' .config; then
+    printf 'ERROR: dropped by defconfig: %s\n' '{{ option }}' >&2; dropped=1
+fi
+{% else %}
+if ! grep -qxF '{{ option }}' .config; then
+    printf 'ERROR: dropped by defconfig: %s\n' '{{ option }}' >&2; dropped=1
+fi
+{% endif %}
 {% endfor %}
 [ "$dropped" -eq 0 ] || exit 1
 
@@ -61,6 +83,9 @@ fi
 kernel_options=( {% for option in source.kernel %}'{{ option }}' {% endfor %} )
 for option in "${kernel_options[@]}"; do
     kernel_option="CONFIG_${option#CONFIG_KERNEL_}"
+    if [[ "$option" == *=n ]]; then
+        kernel_option="# ${kernel_option%=n} is not set"
+    fi
     grep -qxF "$kernel_option" "$kernel_config" \
         || { echo "ERROR: $kernel_option missing from $kernel_config" >&2; exit 1; }
 done

@@ -35,11 +35,15 @@ build_variants:
       # [OPTIONAL] pinned build-environment image (this project's own Dockerfile).
       build_image: "openwrt-buildroot:debian13-r2"
       # [OPTIONAL] extra kernel options merged into .config before defconfig.
-      # Every entry is asserted again after defconfig; a dropped option fails the
-      # build instead of silently shipping a kernel without BTF/ftrace.
+      # Every entry (`=y`, `=m` or `=n`) is asserted again after defconfig; a
+      # dropped option fails the build instead of silently shipping a kernel
+      # without BTF/ftrace.
       kernel:
         - CONFIG_KERNEL_DEBUG_INFO=y
         - CONFIG_KERNEL_DEBUG_INFO_BTF=y
+        # BTF depends on full debug info; KERNEL_DEBUG_INFO_REDUCED defaults to y
+        # and would drop BTF at defconfig.
+        - CONFIG_KERNEL_DEBUG_INFO_REDUCED=n
         - CONFIG_KERNEL_FTRACE=y
         - CONFIG_KERNEL_FUNCTION_TRACER=y
         - CONFIG_KERNEL_DYNAMIC_FTRACE=y
