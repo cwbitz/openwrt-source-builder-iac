@@ -137,7 +137,9 @@ guess when it does not:
   key authorization and the sudoers file are written to the same paths with the
   same content (`changed=0`).
 - **`admin` account** — the password hash is re-derived with the *existing* salt
-  and rounds, so the same vault value produces a byte-identical hash. Before
+  and rounds (the 5000-round default when the hash carries no `rounds=` field,
+  which is what cloud-init writes), so the same vault value produces a
+  byte-identical hash. Before
   writing, `host-bootstrap` asserts that either the account is new, the existing
   hash already matches this project's vault, or the hash uses an algorithm it
   cannot compare (warned). It also refuses to *generate* a password for an

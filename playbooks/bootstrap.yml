@@ -348,7 +348,7 @@
           {%- set parts = shadow_hash.split('$') -%}
           {{ parts[2].split('=', 1)[1] | int
              if (parts | length >= 4 and parts[1] == '6' and parts[2].startswith('rounds='))
-             else 656000 }}
+             else 5000 }}
       no_log: true
       when:
         - bootstrap_admin_defined | bool
