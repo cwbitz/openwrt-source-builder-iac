@@ -117,6 +117,23 @@
          else ([ansible_facts.processor_vcpus | int,
                 (ansible_facts.memtotal_mb | int) // 2048] | min) }}
 
+- name: Warn when reported memory throttles the derived job count
+  ansible.builtin.debug:
+    msg:
+      - >-
+        WARNING: only {{ source_jobs_effective }} parallel job(s) for
+        {{ ansible_facts.processor_vcpus }} vCPU, because this guest reports
+        {{ ansible_facts.memtotal_mb }} MB of RAM.
+      - >-
+        A virtual machine that balloons its memory down (Proxmox
+        memory_floating) shrinks that figure, and the build then stays slow
+        without any other symptom. Set the variant's source.jobs explicitly, or
+        stop the build host from reclaiming its memory.
+  when:
+    - (source.jobs | default('') | string | length) == 0
+    - ansible_facts.processor_vcpus | int >= 4
+    - (source_jobs_effective | int) * 2 < ansible_facts.processor_vcpus | int
+
 - name: Show the resolved build plan
   ansible.builtin.debug:
     msg:

@@ -82,7 +82,7 @@ source:
 | `target` | — | **[REQUIRED]** `<target>/<subtarget>`, e.g. `mediatek/filogic`, `x86/64` |
 | `repo_url` | `https://git.openwrt.org/openwrt/openwrt.git` | Upstream (or mirror) repository |
 | `update` | `false` | Run `feeds update -a` before building; the tree still fetches the ref |
-| `jobs` | `""` | Parallel make jobs; empty ⇒ `min(vCPU, RAM-GB / 2)` |
+| `jobs` | `""` | Parallel make jobs; empty ⇒ `min(vCPU, RAM-GB / 2)` from the RAM the guest reports — a ballooned VM shrinks it, so pin it on a build host |
 | `clean` | `false` | Run `make clean` before the build (keeps `dl/` and `ccache/`) |
 | `ccache` | `true` | Share the `ccache/` directory across builds (`CONFIG_CCACHE=y`) |
 | `build_image` | `openwrt-buildroot:debian13` | Pinned build environment, built from `roles/buildroot/files/Dockerfile` |
@@ -308,8 +308,8 @@ administration:
 | Knob | Default | Effect |
 |------|---------|--------|
 | `source_min_free_gb` | `25` | Preflight refuses to start below this much free space on the volume holding `~/.cache/openwrt-builder` |
-| `source.jobs` | `""` | Parallel make jobs; empty derives `min(vCPU, RAM-GB / 2)` |
-| `source.ccache` | `true` | Shared compiler cache under `~/.cache/openwrt-builder/ccache` |
+| `source.jobs` | `""` | Parallel make jobs; empty derives `min(vCPU, RAM-GB / 2)` from the reported RAM (pin it when the build host balloons) |
+| `source.ccache` | `true` | Shared compiler cache under `~/.cache/openwrt-builder/ccache` (`CONFIG_DEVEL=y` + `CONFIG_CCACHE=y` + `CONFIG_CCACHE_DIR`) |
 | `source.clean` | `false` | `make clean` before the build (keeps `dl/` and `ccache/`) |
 | `docker_registry_mirrors` | `[]` | Docker Hub pull-through mirrors written into the build host's `daemon.json` |
 

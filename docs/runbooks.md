@@ -16,7 +16,7 @@ Operational procedures for building OpenWrt firmware from source with
 | Docker Engine / Desktop | Must be running on the `builders` host(s); the build toolchain itself lives in the pinned image |
 | GNU `make`, `perl`, `git` on the build host | `feeds update/install` runs outside the container, so the host needs these even though the compile does not |
 | Disk | ~30 GB free on the volume holding `~/.cache/openwrt-builder` (the preflight floor is `source_min_free_gb`, default 25) |
-| RAM | The effective job count is `min(vCPU, RAM-GB / 2)`; 8 GB is a practical minimum |
+| RAM | The effective job count is `min(vCPU, RAM-GB / 2)` from the RAM the guest reports, so a ballooned VM can silently drop to one job; 8 GB is a practical minimum, and `source.jobs` pins the count |
 | python >= 3.8 | Control node; runs `ansible-core` and the `community.docker` modules |
 | `ansible-core` + `python` | Pinned in `.tool-versions` (`mise install` / `asdf install`) |
 | `community.docker` | Installed into `collections/` by `make install` |
@@ -256,6 +256,7 @@ host keeps its old login policy. The provider console remains the recovery path.
 | WAN is not configured | The image intentionally leaves WAN (DHCP/PPPoE) unset; configure it after first boot |
 | Build hangs at "Building package index..." / fakeroot | The container `nofile` ulimit is unbounded and fakeroot's `faked` spins; the role pins `nofile:65536:65536`, keep it bounded |
 | Build is far slower than before | The cache key changed (ref, target or kernel options); a full rebuild is expected. Check `~/.cache/openwrt-builder/source` |
+| `Jobs 1` in the build plan / a build far slower than the vCPU count suggests | The guest reports ballooned-down RAM, so `min(vCPU, RAM-GB/2)` collapses to 1. Pin the variant's `source.jobs`, or stop the build host from reclaiming memory (`memory_floating`) |
 | Out of disk during a build | `dl/`, `ccache/` and the tree grow together; `make cache-clean PURGE=1` resets, then the next build is full |
 | `opkg install kmod-*` fails on the device | The image has a custom kernel and module ABI; build the modules into the image instead |
 | Artifacts not in the control node's `artifacts/` | The fetch failed; inspect the fetch task. The builder keeps its `bin/` until the next build, so a re-run or a manual `scp` can recover it |
