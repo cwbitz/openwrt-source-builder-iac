@@ -12,10 +12,10 @@ own `host_vars`.
 | Location | Purpose |
 |----------|---------|
 | `inventory/hosts.yml` | the `builders` group: one host per machine, each with its `ansible_host` |
-| `inventory/group_vars/all/main.yml` | committed project-owned baseline: `ssh_identities` + the connection-plugin interface and the shared vault path |
+| `inventory/group_vars/all/main.yml` | committed project-owned baseline: `ssh_identities` + the connection-plugin interface and the per-machine vault path |
 | `inventory/group_vars/builders/main.yml` | machine-wide operator overrides, local-only (e.g. `create_admin_account`, `docker_registry_mirrors`) |
 | `inventory/host_vars/<machine>/main.yml` | that machine's `build_variants` list and `source_min_free_gb` |
-| `inventory/group_vars/builders/vault.yml` | shared connection secrets (one per fleet) |
+| `inventory/host_vars/<machine>/vault.yml` | that machine's connection secrets |
 | `inventory/knob_schema.yml` | committed validation expression per top-level operator knob |
 
 The committed files are `inventory/hosts.yml.example`, the project-owned baseline
@@ -346,7 +346,7 @@ the control node and rolls the drop-in back if either check fails.
 No firmware secrets are baked into the image. The WAN (PPPoE/DHCP) and root
 passwords are set after first boot (or by a separate provisioning mechanism), so
 the built artifact contains no credentials. There is no per-machine firmware
-vault; connection credentials live in `group_vars/builders/vault.yml`. An
+vault; connection credentials live in each machine's `host_vars/<machine>/vault.yml`. An
 `administration.root_password` or a `custom_overlay` file is the exception the
 operator chooses explicitly.
 

@@ -40,7 +40,7 @@ make host-init HOST=builder-1 HOST_IP=203.0.113.50   # scaffolds group_vars + ho
 make host-init HOST=openwrt-src-prod-2 HOST_IP=203.0.113.51   # repeat for each machine
 make install
 make vault-init
-make vault-edit-group                     # shared SSH identity vault
+make vault-edit HOST=builder-1      # per-machine SSH identity vault
 make host-bootstrap                       # once; probe iac -> admin -> root
 # or, to bootstrap and then build everything in one shot:
 make deploy
@@ -64,7 +64,7 @@ works on each; when that is not `iac`, it
 (re)creates the `iac` automation account (key-first, NOPASSWD sudo, the `docker`
 group when present) and the optional human `admin` account. It self-heals a
 rotated/deleted credential. With no `host_iac_ssh_pubkey_file`, an empty
-`vault_host_iac_password` is generated into the shared vault under the same
+`vault_host_iac_password` is generated into the machine's vault under the same
 name. Passwords use a per-account random salt with `update_password: on_create`.
 See [architecture](architecture.md) for the full model.
 
@@ -180,10 +180,10 @@ helper chatter is silenced (`QUIET=1`) and the result is printed per variant.
   root passwords after first boot. An explicit
   `administration.root_password` or a `custom_overlay` file is operator-chosen and
   does end up in the artifact.
-- **Connection credentials** are machine-wide (`inventory/group_vars/builders/vault.yml`).
+- **Connection credentials** are per machine (`inventory/host_vars/<machine>/vault.yml`).
 - The vault password file lives outside the repo and is never committed;
-  `make vault-edit-group` encrypts a plaintext vault before editing.
-- Vault keys are kept in alphabetical order: `make vault-edit-group` re-sorts
+  `make vault-edit` encrypts a plaintext vault before editing.
+- Vault keys are kept in alphabetical order: `make vault-edit` re-sorts
   the top-level keys after the editor closes (comment-preserving) and re-encrypts
   only when the order changed. Hand edits should stay alphabetical too.
 - Values are Jinja-templated and shell-quoted automatically, so special
@@ -233,7 +233,7 @@ host keeps its old login policy. The provider console remains the recovery path.
 
 | Symptom | Cause / fix |
 |---------|-------------|
-| `host-bootstrap`: "no working identity" | Configure the connection passwords in the shared vault and/or the key paths in `group_vars/builders/main.yml`, or load a key into the SSH agent. If only `root` works, set the root password (or a root private key) |
+| `host-bootstrap`: "no working identity" | Configure the connection passwords in the machine's vault and/or the key paths in `group_vars/builders/main.yml`, or load a key into the SSH agent. If only `root` works, set the root password (or a root private key) |
 | `build`/`info` cannot connect as `iac` | Run `make host-bootstrap` once; the effective password is `vault_host_iac_password` (generated when empty), else set `host_iac_ssh_privkey_file`/pubkey |
 | Need the auto-generated password | `make vault-view` |
 | `build` fails: vault password file missing | Run `make vault-init` |
@@ -309,7 +309,7 @@ reason to skip.
       `source/`, `dl/`, `image/`, and the next build is full.
 - [ ] No firmware secrets are in the artifacts or the tree: a built image carries
       no WAN/root password.
-- [ ] The shared builder vault is `0600` and encrypted; `make vault-view` reads it
+- [ ] Each machine vault is `0600` and encrypted; `make vault-view` reads it
       and `-vvv` shows no value.
 - [ ] With `sshd_hardening_enabled`: password login refused, keyed login works, and
       a missing authorized key blocks the role before it writes the config.

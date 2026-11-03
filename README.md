@@ -41,7 +41,7 @@ mise install                 # pinned toolchain (.tool-versions)
 make install                 # collections + control-node dependencies
 make host-init HOST=builder-1 HOST_IP=203.0.113.50
 $EDITOR inventory/host_vars/builder-1/main.yml   # real source.ref/target/profile
-make vault-init && make vault-edit-group
+make vault-init && make vault-edit HOST=builder-1
 make host-bootstrap          # once per machine; creates the `iac` account
 make build                   # every variant, machines in parallel
 ```
@@ -70,7 +70,7 @@ inventory/            hosts, group/shared vars, per-machine build_variants, knob
 playbooks/            build / info / bootstrap / validate_knobs / host_keys / cleanup
 roles/buildroot/      the source backend: preflight, tree+feeds, config, overlay,
                       container build, artifact fetch, metadata, info
-roles/helpers/        shared vault read/write/generate helpers
+roles/helpers/        vault read/write/generate helpers
 roles/sshd/           opt-in key-only SSH hardening (off by default here)
 scripts/              control-node helpers (agent runner, audit, privacy, vault sort)
 ```
