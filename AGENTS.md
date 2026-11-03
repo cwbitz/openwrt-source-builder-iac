@@ -103,8 +103,8 @@ Task slices, individually selectable with `--tags`
    asserts the requested kernel options survived, the kernel config carries them,
    `.BTF` exists when requested, and removed packages are absent from `.manifest`.
 7. **fetch** — copies only `bin/targets/...` to
-   `artifacts/<build_id>/targets/...` (never the `bin/packages` tree).
-8. **record** — writes `artifacts/<build_id>/build-info/{source.json,config}`.
+   `artifacts/<artifact_id>/targets/...` (never the `bin/packages` tree).
+8. **record** — writes `artifacts/<artifact_id>/build-info/{source.json,config}`.
 
 The build container runs as the invoking host uid/gid (no root-owned tree, no
 `chown -R` pass) and must keep `--ulimit nofile:65536:65536`: fakeroot's `faked`

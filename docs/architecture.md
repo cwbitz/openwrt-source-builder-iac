@@ -134,16 +134,22 @@ vault (`vault_host_<id>_password`) and the non-secret group knobs
 ## Variant isolation
 
 The inventory host is the machine, so the role appends the variant name to form a
-**build id** (`<machine>-<variant>`). Every per-variant path uses it:
+**build id** (`<machine>-<variant>`). Scratch paths use it; the control-node copy
+uses the artifact id (see below):
 
 | Path | Purpose |
 |------|---------|
 | `~/.cache/openwrt-builder/source/<target>-<ref>-<kernel-sha1>` | cached source tree (shared by variants with the same tuple) |
 | `~/.cache/openwrt-builder/dl` / `ccache` / `image` | shared download cache, compiler cache and build-image context |
 | `~/.cache/openwrt-builder/work/<machine>-<variant>` | per-build scratch (build script, rendered overlay), removed after the build |
-| `<repo>/artifacts/<machine>-<variant>/targets/...` | control-node artifact copy |
-| `<repo>/artifacts/<machine>-<variant>/build-info/` | resolved commit, feeds, final `.config` |
+| `<repo>/artifacts/<artifact_id>/targets/...` | control-node artifact copy |
+| `<repo>/artifacts/<artifact_id>/build-info/` | resolved commit, feeds, final `.config` |
 | `openwrt-src-<machine>-<variant>` | build container name |
+
+The **artifact id** — `<machine>-<variant>-source-<target>-<ref>` — names the
+control-node copy, so the folder says which backend, target and pinned ref built it
+and stays distinguishable from another IaC project's output for the same machine
+and variant.
 
 The **cache key** is `<target>-<ref>-<sha1(kernel options)[0:8]>`: two variants
 that differ only in kernel options do not share a tree, because a different

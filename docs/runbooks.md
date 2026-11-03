@@ -88,12 +88,12 @@ orchestration and overlay rendering.
 
 | Knob | Default | Effect |
 |------|---------|--------|
-| `artifacts_dir` | `<repo>/artifacts/<machine>-<variant>` | Control-node destination (always fetched) |
+| `artifacts_dir` | `<repo>/artifacts/<artifact_id>` | Control-node destination (always fetched); `<artifact_id>` = `<machine>-<variant>-source-<target>-<ref>` |
 | `output_dir` | `~/.cache/openwrt-builder/source/<key>/bin` | Builder-side `bin/` staging, removed before the next build |
 
 Only `targets/<target>/<subtarget>/` is fetched (`bin/packages` is not); the
 `artifacts/` directory is local-only and gitignored, and is created on demand.
-Each build also writes `artifacts/<build-id>/build-info/source.json` (build image,
+Each build also writes `artifacts/<artifact_id>/build-info/source.json` (build image,
 repo, ref, resolved commit, target, profile, jobs, kernel options, packages, feed
 commits, config hash) and `config` (the final `.config`).
 
@@ -102,7 +102,7 @@ commits, config hash) and `config` (the final `.config`).
 ```bash
 ls -R artifacts
 sha256sum -c artifacts/*/targets/*/*/sha256sums 2>/dev/null || true
-cat artifacts/<machine>-<variant>/build-info/source.json
+cat artifacts/<artifact_id>/build-info/source.json
 ```
 
 On a booted test device, confirm the kernel actually has what was requested:
@@ -113,7 +113,7 @@ test -d /sys/kernel/tracing && echo ftrace ok
 ```
 
 The final `.config` that produced the image is in
-`artifacts/<machine>-<variant>/build-info/config`; it carries the
+`artifacts/<artifact_id>/build-info/config`; it carries the
 `CONFIG_KERNEL_*` lines the build asserted.
 
 Because the kernel is custom, `opkg install kmod-*` from the official release does
@@ -277,7 +277,7 @@ reason to skip.
 - [ ] `make host-bootstrap`: `iac` created with passwordless sudo and the configured
       keys, Docker Engine present; a second run changes nothing.
 - [ ] `make build` builds every declared variant and fetches the images into the
-      control node's `artifacts/<build-id>/targets/...`; `build-info/source.json`
+      control node's `artifacts/<artifact_id>/targets/...`; `build-info/source.json`
       names the resolved commit, the feeds and the final config hash.
 - [ ] The build container runs as the invoking uid/gid: the source tree and
       artifacts are not root-owned.

@@ -46,9 +46,10 @@ make host-bootstrap          # once per machine; creates the `iac` account
 make build                   # every variant, machines in parallel
 ```
 
-Artifacts land in `artifacts/<machine>-<variant>/targets/<target>/<subtarget>/`
-plus `artifacts/<machine>-<variant>/build-info/` (resolved commit, feeds commits,
-the final `.config`, and a hash of it).
+Artifacts land in `artifacts/<artifact_id>/targets/<target>/<subtarget>/` plus
+`artifacts/<artifact_id>/build-info/` (resolved commit, feeds commits, the final
+`.config`, and a hash of it), where `<artifact_id>` is
+`<machine>-<variant>-source-<target>-<ref>`.
 
 ## Commands
 

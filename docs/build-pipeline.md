@@ -34,7 +34,7 @@ per variant and are individually selectable with `--tags`
    are absent from `.manifest`.
 8. **fetch** — copies `bin/targets/...` to the control node; the scratch work
    directory is removed when the role exits.
-9. **record** — writes `artifacts/<build_id>/build-info/{source.json,config}`.
+9. **record** — writes `artifacts/<artifact_id>/build-info/{source.json,config}`.
 
 The runner streams Ansible's output live instead of capturing it until exit, so
 task progress and failures are visible while a build runs.
@@ -141,8 +141,10 @@ the builder-side work scratch for every variant.
 | Path | Where |
 |------|-------|
 | `~/.cache/openwrt-builder/work/<machine>-<variant>` | builder-side scratch (build script, rendered overlay), removed after the build |
-| `<repo>/artifacts/<machine>-<variant>/targets/<target>/<subtarget>/` | control-node copy (gitignored) |
-| `<repo>/artifacts/<machine>-<variant>/build-info/` | resolved commit, feeds, final `.config`, `source.json` |
+| `<repo>/artifacts/<artifact_id>/targets/<target>/<subtarget>/` | control-node copy (gitignored) |
+| `<repo>/artifacts/<artifact_id>/build-info/` | resolved commit, feeds, final `.config`, `source.json` |
+
+`<artifact_id>` is `<machine>-<variant>-source-<target>-<ref>`.
 
 Only `bin/targets` is fetched (never the `bin/packages` tree), with the
 `targets/<target>/<subtarget>/` layout preserved: firmware images,

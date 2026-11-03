@@ -99,7 +99,7 @@ kernel-option change is a cache miss by design; a `ref` move is too.
 `ref` accepts a tag, branch or commit. The role fetches it shallow first and falls
 back to a full ref fetch, then to a whole-history fetch, for servers or commit
 data that shallow fetch cannot serve; the resolved commit is checked out detached
-and recorded in `artifacts/<build_id>/build-info/source.json`.
+and recorded in `artifacts/<artifact_id>/build-info/source.json`.
 
 ### Kernel options
 
