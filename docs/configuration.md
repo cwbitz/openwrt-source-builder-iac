@@ -86,9 +86,9 @@ source:
 | `update` | `false` | Run `feeds update -a` before building; the tree still fetches the ref |
 | `jobs` | `""` | Parallel make jobs; empty ⇒ `min(vCPU, RAM-GB / 2)` from the RAM the guest reports — a ballooned VM shrinks it, so pin it on a build host |
 | `clean` | `false` | Run `make clean` before the build (keeps `dl/` and `ccache/`) |
-| `ccache` | `true` | Share the `ccache/` directory across builds (`CONFIG_CCACHE=y`) |
-| `build_image` | `openwrt-buildroot:debian13` | Pinned build environment, built from `roles/buildroot/files/Dockerfile` |
-| `kernel` | `[]` | Extra kernel options merged into `.config`; every entry must be `CONFIG_<NAME>=y\|m` |
+| `ccache` | `true` | Share the `ccache/` directory across builds; writes `CONFIG_DEVEL=y` + `CONFIG_CCACHE=y` + `CONFIG_CCACHE_DIR="/ccache"` (the symbol is only visible with the developer options) |
+| `build_image` | `openwrt-buildroot:debian13-r2` | Pinned build environment, built from `roles/buildroot/files/Dockerfile` |
+| `kernel` | `[]` | Extra kernel options merged into `.config`; every entry must be `CONFIG_<NAME>=y\|m\|n` (`=n` is asserted as the `# … is not set` line kconfig writes back) |
 
 ### Pinning and the cache key
 

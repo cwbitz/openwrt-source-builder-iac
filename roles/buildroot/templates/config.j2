@@ -8,7 +8,9 @@ CONFIG_TARGET_{{ source.target.split('/')[0] }}_{{ source.target.split('/')[1] }
 CONFIG_TARGET_ROOTFS_PARTSIZE={{ rootfs_partsize }}
 {% endif %}
 {% if source.ccache | default(true) | bool %}
+CONFIG_DEVEL=y
 CONFIG_CCACHE=y
+CONFIG_CCACHE_DIR="/ccache"
 {% endif %}
 CONFIG_DOWNLOAD_FOLDER="/build/dl"
 {% for option in source.kernel | default([]) %}
