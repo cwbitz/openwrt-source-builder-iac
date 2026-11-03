@@ -65,7 +65,7 @@ build_variants:
       jobs: ""                      # empty => min(nproc, RAM-GB / 2)
       clean: false                  # make clean (keeps dl/ and ccache/)
       ccache: true                  # shared ccache directory
-      build_image: openwrt-buildroot:debian13
+      build_image: openwrt-buildroot:debian13-r2
       kernel:                       # asserted again after `make defconfig`
         - CONFIG_KERNEL_DEBUG_INFO_BTF=y
     target_profile: <profile>

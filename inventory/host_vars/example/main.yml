@@ -33,7 +33,7 @@ build_variants:
       # [OPTIONAL] ccache across builds (needs disk; disable on small volumes).
       ccache: true
       # [OPTIONAL] pinned build-environment image (this project's own Dockerfile).
-      build_image: "openwrt-buildroot:debian13"
+      build_image: "openwrt-buildroot:debian13-r2"
       # [OPTIONAL] extra kernel options merged into .config before defconfig.
       # Every entry is asserted again after defconfig; a dropped option fails the
       # build instead of silently shipping a kernel without BTF/ftrace.

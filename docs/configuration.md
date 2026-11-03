@@ -71,7 +71,7 @@ source:
   jobs: ""
   clean: false
   ccache: true
-  build_image: openwrt-buildroot:debian13
+  build_image: openwrt-buildroot:debian13-r2
   kernel:
     - CONFIG_KERNEL_DEBUG_INFO_BTF=y
 ```
