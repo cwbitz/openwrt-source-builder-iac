@@ -1,0 +1,81 @@
+---
+- name: Load the control-node private keys into the running SSH agent
+  hosts: localhost
+  gather_facts: false
+  become: false
+  vars:
+    ansible_become: false
+    agent_load_hosts: "{{ groups['builders'] | default([]) }}"
+  tasks:
+    - name: "[SSHAgent] Assert the Keychain ssh-agent is reachable in this shell"
+      ansible.builtin.assert:
+        that:
+          - lookup('ansible.builtin.env', 'SSH_AUTH_SOCK') | length > 0
+        fail_msg: >-
+          SSH_AUTH_SOCK is not set. Start the Keychain agent in this shell, or
+          run the internal `make agent-load` to start it and load the connection
+          keys now.
+
+    - name: "[SSHAgent] Collect the configured private-key file paths (per identity)"
+      ansible.builtin.set_fact:
+        agent_privkey_files: >-
+          {{ (agent_privkey_files | default([])) +
+             [ hostvars[item].ssh_identities.iac.privkey | default('', true),
+               hostvars[item].ssh_identities.admin.privkey | default('', true),
+               hostvars[item].ssh_identities.root.privkey | default('', true) ] }}
+      loop: "{{ agent_load_hosts }}"
+      loop_control:
+        label: "{{ item }}"
+
+    - name: "[SSHAgent] Deduplicate the configured private-key paths"
+      ansible.builtin.set_fact:
+        agent_privkeys: >-
+          {{ agent_privkey_files | select | unique | list }}
+
+    - name: "[SSHAgent] Warn when no private-key paths are configured"
+      ansible.builtin.debug:
+        msg: >-
+          No host_<id>_ssh_privkey_file values found (no hosts, or empty
+          vaults). Nothing to load.
+      when: agent_privkeys | length == 0
+
+    - name: "[SSHAgent] Load each private key into the SSH agent"
+      ansible.builtin.shell: |
+        set -u
+        key="${KEY/#\~/$HOME}"
+        if [ ! -f "$key" ]; then
+          echo "SKIP (missing): $key"
+          exit 0
+        fi
+        if ssh-add "$key" >/dev/null 2>&1; then
+          echo "ADDED: $key"
+        elif ssh-add - < "$key" >/dev/null 2>&1; then
+          echo "ADDED (via stdin, permissions): $key"
+        else
+          echo "FAILED: $key"
+          exit 1
+        fi
+      args:
+        executable: /bin/bash
+      environment:
+        KEY: "{{ item }}"
+      loop: "{{ agent_privkeys }}"
+      loop_control:
+        label: "{{ item }}"
+      changed_when: false
+      register: agent_load
+
+    - name: "[SSHAgent] Show what was loaded"
+      ansible.builtin.debug:
+        msg: "{{ agent_load.results | map(attribute='stdout') | list }}"
+      when: agent_load.results | length > 0
+
+    - name: "[SSHAgent] List the identities currently held by the agent"
+      ansible.builtin.command: ssh-add -l
+      changed_when: false
+      failed_when: false
+      register: agent_identities
+
+    - name: "[SSHAgent] Agent identities"
+      ansible.builtin.debug:
+        msg: "{{ agent_identities.stdout_lines | default(['<none>']) }}"

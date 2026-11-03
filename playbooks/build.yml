@@ -1,0 +1,60 @@
+---
+- name: "Preflight: assert a supported ansible-core engine"
+  hosts: localhost
+  vars:
+    ansible_become: false
+  connection: local
+  become: false
+  gather_facts: false
+  tags: [always]
+  tasks:
+    - name: "[Preflight] Require at least one build machine"
+      ansible.builtin.assert:
+        that:
+          - groups['builders'] | default([]) | length > 0
+        fail_msg: >-
+          The 'builders' inventory group is empty. Add at least one machine
+          under builders.hosts in inventory/hosts.yml (see hosts.yml.example).
+        quiet: true
+
+    - name: "[Preflight] Assert a supported ansible-core engine on the control node"
+      ansible.builtin.assert:
+        that:
+          - ansible_version.full is version(ansible_core_min_version | default('2.19.0'), '>=')
+          - (ansible_version.full is version(ansible_core_max_version | default('2.20.0'), '<')) or (ansible_core_allow_untested | default(false) | bool)
+        fail_msg: >-
+          ansible-core {{ ansible_version.full }} is outside the supported range
+          [{{ ansible_core_min_version | default('2.19.0') }},
+          {{ ansible_core_max_version | default('2.20.0') }}). Install the pinned
+          toolchain (mise install / make install) or, if you knowingly accept an
+          untested newer engine, set ansible_core_allow_untested=true.
+        quiet: true
+
+- name: "Preflight: verify the managed hosts"
+  import_playbook: preflight_managed_hosts.yml
+
+- name: "OpenWrt firmware image build"
+  hosts: builders
+  gather_facts: true
+  become: false
+  tasks:
+    - name: "Build each variant of the machine"
+      ansible.builtin.include_role:
+        name: buildroot
+      loop: "{{ build_variants }}"
+      loop_control:
+        loop_var: build_variant
+        label: "{{ build_variant.name }}"
+      tags: [always]
+
+- name: "Harden SSH (opt-in)"
+  hosts: builders
+  become: true
+  gather_facts: true
+  vars:
+    ansible_become: true
+    ansible_become_password: "{{ ssh_password | default('', true) }}"
+  roles:
+    - role: sshd
+      tags: [sshd]
+      when: sshd_hardening_enabled | default(false) | bool

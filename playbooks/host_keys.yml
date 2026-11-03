@@ -1,0 +1,26 @@
+---
+- name: "Emit resolved SSH targets"
+  hosts: localhost
+  gather_facts: false
+  connection: local
+  become: false
+  vars:
+    ansible_become: false
+    host_keys_out: "host_keys.json"
+  tasks:
+    - name: "[HostKeys] Build the resolved target list"
+      ansible.builtin.set_fact:
+        host_keys_targets: >-
+          {{ host_keys_targets | default([]) + [ {
+               'name': item,
+               'host': hostvars[item].ansible_host | default(item),
+               'port': hostvars[item].ansible_port | default(22) } ] }}
+      loop: "{{ groups['builders'] | default([]) }}"
+      changed_when: false
+
+    - name: "[HostKeys] Write the resolved SSH targets"
+      ansible.builtin.copy:
+        content: "{{ host_keys_targets | default([]) | to_json }}"
+        dest: "{{ host_keys_out }}"
+        mode: "0600"
+      changed_when: false
