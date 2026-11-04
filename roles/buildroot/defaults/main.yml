@@ -39,7 +39,13 @@ build_dir: "{{ ansible_facts.user_dir }}/.cache/openwrt-builder"
 artifact_id: >-
   {{ [build_id, 'source',
       (source.target | default('unknown', true)) | replace('/', '-'),
-      (source.ref | default('unknown', true)) | replace('/', '-')] | join('-') }}
+      (source.ref | default('unknown', true)) | replace('/', '-'),
+      (['kernel:' ~ (source.kernel | default([]) | sort | join(',')),
+        'packages:' ~ (packages | default([]) | sort | join(',')),
+        'profile:' ~ (target_profile | default('')),
+        'rootfs:' ~ (rootfs_partsize | default('')),
+        'name:' ~ (extra_firmware_name | default(''))] | join('|') | hash('sha1'))[0:8]
+     ] | join('-') }}
 artifacts_dir: "{{ project_root }}/artifacts/{{ artifact_id }}"
 
 # Refuse to start a build below this much free space on the builder.

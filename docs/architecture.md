@@ -144,7 +144,7 @@ uses the artifact id (see below):
 | `~/.cache/openwrt-builder/source/<target>-<ref>-<kernel-sha1>` | cached source tree (shared by variants with the same tuple) |
 | `~/.cache/openwrt-builder/dl` / `ccache` / `image` | shared download cache, compiler cache and build-image context |
 | `~/.cache/openwrt-builder/work/<machine>-<variant>` | per-build scratch (build script, rendered overlay), removed after the build |
-| `<repo>/artifacts/<artifact_id>/targets/...` | control-node artifact copy |
+| `<repo>/artifacts/<artifact_id>/targets/...` | control-node artifact copy (`<artifact_id>` includes a digest of the variant inputs) |
 | `<repo>/artifacts/<artifact_id>/build-info/` | resolved commit, feeds, final `.config` |
 | `openwrt-src-<machine>-<variant>` | build container name |
 

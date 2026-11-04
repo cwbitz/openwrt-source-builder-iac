@@ -115,6 +115,9 @@ Task slices, individually selectable with `--tags`
    `.BTF` exists when requested, and removed packages are absent from `.manifest`.
 7. **fetch** — copies only `bin/targets/...` to
    `artifacts/<artifact_id>/targets/...` (never the `bin/packages` tree).
+   `artifact_id` is `<machine>-<variant>-source-<target>-<ref>-<digest>`, the
+   digest covering the variant's kernel options, packages, profile, rootfs size
+   and image name, so a changed variant gets its own directory.
 8. **record** — writes `artifacts/<artifact_id>/build-info/{source.json,config}`.
 
 The build container runs as the invoking host uid/gid (no root-owned tree, no
