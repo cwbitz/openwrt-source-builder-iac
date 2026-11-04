@@ -169,10 +169,11 @@ helper chatter is silenced (`QUIET=1`) and the result is printed per variant.
 - Pin `source.ref` to a tag or commit; branches move.
 - The resolved commit and every feed's `HEAD` are recorded in
   `build-info/source.json`, together with the final `.config` and its SHA256.
-- `source_build_image` (`roles/buildroot/vars/main.yml`) names the build
-  environment; a Dockerfile change without a tag bump rebuilds the image on the
-  host but leaves the recorded name unchanged. Bump the tag with every Dockerfile
-  change.
+- The build image has one stable name (`openwrt:buildroot`): the role re-tags it
+  whenever `roles/buildroot/files/Dockerfile` changes, and `build-info/source.json`
+  records the Dockerfile's digest next to it, so an artifact still identifies the
+  exact environment. A machine that needs extra tools sets `build_image_override`
+  in `group_vars/builders/main.yml` to its own repository:tag.
 - The cache key includes the kernel options, so two variants cannot silently share
   a tree with a different kernel configuration.
 

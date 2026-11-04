@@ -7,6 +7,8 @@
 # The tag this image is built and referenced by lives in
 # roles/buildroot/vars/main.yml (`source_build_image`); a tag bump is a
 # build-environment change and belongs there, not in this file.
+# Debian (glibc) on purpose: OpenWrt builds its host tools against glibc, while a
+# musl host (Alpine) needs argp/fts/obstack/libintl shims and is not supported.
 FROM debian:13-slim
 
 ENV DEBIAN_FRONTEND=noninteractive \

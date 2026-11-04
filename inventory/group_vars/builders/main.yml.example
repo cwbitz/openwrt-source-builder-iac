@@ -32,6 +32,14 @@ host_admin_ssh_privkey_file: ""
 host_root_ssh_pubkey_file: ""
 host_root_ssh_privkey_file: ""
 
+# --- Build environment --------------------------------------------------------
+# Empty uses the project's own pinned image (`openwrt:buildroot`, built from
+# roles/buildroot/files/Dockerfile). Point it at your own repository:tag to add
+# tools without changing this project: build a derived image (`FROM
+# openwrt:buildroot`, then your packages) and reference it here. The artifact
+# records the tag and the Dockerfile digest it was built with.
+build_image_override: ""
+
 # --- 'iac' automation account (created by `make host-bootstrap`) --------------
 # Fixed service uid/gid; project-wide automation accounts use 6000-6499.
 iac_uid: 6000

@@ -90,6 +90,29 @@ source:
 | `ccache` | `true` | Share the `ccache/` directory across builds; writes `CONFIG_DEVEL=y` + `CONFIG_CCACHE=y` + `CONFIG_CCACHE_DIR="/ccache"` (the symbol is only visible with the developer options) |
 | `kernel` | `[]` | Extra kernel options merged into `.config`; every entry must be `CONFIG_<NAME>=y\|m\|n` (`=n` is asserted as the `# … is not set` line kconfig writes back) |
 
+### Extending the build environment
+
+The image is built from `roles/buildroot/files/Dockerfile` and carries one stable
+name (`openwrt:buildroot`); the role re-tags it when that file changes and
+`build-info/source.json` records the Dockerfile digest beside it. A machine that
+needs extra tooling points `build_image_override`
+(`inventory/group_vars/builders/main.yml`) at its own image — no fork, no code
+change:
+
+```dockerfile
+# Dockerfile.myorg
+FROM openwrt:buildroot
+RUN apt-get update && apt-get install -y --no-install-recommends openjdk-21-jdk-headless \
+ && rm -rf /var/lib/apt/lists/*
+```
+
+```yaml
+build_image_override: "myorg/openwrt:buildroot-java"
+```
+
+Build it on the host (`docker build -t myorg/openwrt:buildroot-java .`) or from a
+registry; the role tags/uses exactly that reference and the artifacts record it.
+
 ### Pinning and the cache key
 
 The tree is cached per `(target, ref, kernel options)`:

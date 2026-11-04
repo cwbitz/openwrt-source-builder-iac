@@ -26,6 +26,7 @@
       build_run_id: "{{ build_run_id | default('') }}"
       backend: source
       build_image: "{{ source_build_image }}"
+      build_image_digest: "{{ build_image_digest }}"
       ref: "{{ source.ref }}"
       repo_url: "{{ source_repo_url }}"
       commit: "{{ source_fetched_commit.stdout | trim }}"

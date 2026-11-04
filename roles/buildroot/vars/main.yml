@@ -1,10 +1,17 @@
 ---
 project_root: "{{ playbook_dir | dirname }}"
 
-# The single pinned build environment, built from files/Dockerfile. Bump this tag
-# whenever that file changes: the artifacts record the tag, so an unbumped change
-# would make two different environments share one name.
-source_build_image: "openwrt-buildroot:debian13-r3"
+# Repository:tag of the build environment built from files/Dockerfile. The tag is
+# stable, not versioned: the role re-tags it whenever that file changes and
+# records the file's digest (`build_image_digest`) in build-info/source.json, so
+# artifacts stay attributable without a manual suffix. Debian (glibc) is
+# deliberate: OpenWrt's host tools build against glibc, while a musl host
+# (Alpine) needs argp/fts/obstack/libintl shims and is not a supported
+# combination.
+build_image_default: "openwrt:buildroot"
+build_image_digest: >-
+  {{ lookup('file', project_root ~ '/roles/buildroot/files/Dockerfile')
+     | hash('sha256') }}
 
 build_id: "{{ inventory_hostname }}-{{ (build_variant | default({})).name | default('') }}"
 builder_workdir: "{{ build_dir }}/work/{{ build_id }}"
