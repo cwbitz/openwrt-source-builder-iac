@@ -15,9 +15,10 @@ ENV DEBIAN_FRONTEND=noninteractive \
     LANG=C.UTF-8 \
     LC_ALL=C.UTF-8
 
-# The OpenWrt prerequisite toolchain (superset of `make prereq`), the host tools
-# the build drives (cmake/ninja for dwarves, pahole for BTF), plus the pieces
-# needed for a BTF/ftrace kernel: elfutils/dwarves (pahole), zlib, zstd.
+# The OpenWrt host toolchain: the `make prereq` set plus the host tools the build
+# invokes itself (cmake, ninja, pkg-config) and the development libraries those
+# builds link against. The set is a superset of what every supported variant
+# needs, so enabling a build feature never requires extending the image.
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
       bash bc binutils bison build-essential bzip2 ca-certificates ccache \
