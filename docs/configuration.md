@@ -93,49 +93,39 @@ source:
 ### The build environment and extra tooling
 
 The build runs in one image, built on the machine from
-`roles/buildroot/files/Dockerfile` and referenced as `cwbitz/openwrt:buildroot`
+`roles/buildroot/files/Dockerfile` and referenced as `cwbitz/openwrt-buildroot`
 (no official OpenWrt source-build image exists: `openwrt/rootfs`,
-`openwrt/imagebuilder` and `openwrt/sdk` are different things). The tag is
-stable, not versioned: the role re-tags the image whenever the Dockerfile
-changes, and `build-info/source.json` records the Dockerfile digest beside the
-tag, so an artifact still identifies the exact environment.
+`openwrt/imagebuilder` and `openwrt/sdk` are different things). The reference is
+stable (`:latest`): the role re-tags it whenever that Dockerfile changes, and
+`build-info/source.json` records the Dockerfile digest beside it, so an artifact
+still identifies the exact environment.
 
-A machine that needs more tools does **not** need to change this project. Set
-`build_image_override` in that machine's `host_vars/<machine>/main.yml`:
+A variant that needs different tools sets `source.build_image`, so one machine
+can build `main` on a Java-capable image and `ap` on the default one:
 
-```yaml
-# host_vars/<machine>/main.yml (next to build_variants, machine-wide)
-build_image_override: "myorg/openwrt:buildroot-java"
+| `source.build_image` | `inventory/custom/build-image/Dockerfile` | Behaviour |
+|---|---|---|
+| empty | — | build `cwbitz/openwrt-buildroot` from the role Dockerfile |
+| set | present | build that image on the machine from the local Dockerfile, rebuilt when it changes |
+| set | absent | use the reference as-is: the local image if present, otherwise pull it |
+
+The machine-local definition is gitignored (`inventory/custom/`) and is layered
+on the project image:
+
+```dockerfile
+# inventory/custom/build-image/Dockerfile
+FROM cwbitz/openwrt-buildroot
+RUN apt-get update && apt-get install -y --no-install-recommends openjdk-21-jdk-headless \
+ && rm -rf /var/lib/apt/lists/*
 ```
 
-The complete flow:
+```yaml
+    source:
+      build_image: "myorg/openwrt-buildroot-java"
+```
 
-1. **Base image** — `make build` builds `cwbitz/openwrt:buildroot` on the machine
-   from `roles/buildroot/files/Dockerfile` (Debian slim + the OpenWrt host
-   toolchain) the first time, and re-tags it when that file changes. Skip this
-   step by building it yourself: `docker build -t cwbitz/openwrt:buildroot roles/buildroot/files`.
-2. **Your layer** — keep the Dockerfile outside this repo (for example
-   `~/docker/openwrt-buildroot/Dockerfile`; `inventory/custom/` is gitignored if
-   you prefer it next to the machine config) and build it:
-
-   ```dockerfile
-   FROM cwbitz/openwrt:buildroot
-   RUN apt-get update && apt-get install -y --no-install-recommends openjdk-21-jdk-headless \
-    && rm -rf /var/lib/apt/lists/*
-   ```
-
-   ```bash
-   docker build -t myorg/openwrt:buildroot-java .
-   ```
-3. **Point the machine at it** — set `build_image_override` as above (or
-   `make build EXTRA='-e build_image_override=myorg/openwrt:buildroot-java'` for
-   a one-off). The role uses that reference as-is: a local image if present,
-   otherwise it pulls it from the registry; it never re-tags it.
-4. **Run** — `make build`; `build-info/source.json` records the override
-   reference and the project Dockerfile digest the layer was built on.
-
-The knob is machine-wide (it describes the build host, not a variant), so it
-lives next to `build_variants`, not inside them.
+Nothing else to run: `make build` builds the derived image before the variant and
+records the reference plus the project Dockerfile digest in `source.json`.
 
 ### Pinning and the cache key
 

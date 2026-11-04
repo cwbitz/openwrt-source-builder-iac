@@ -10,8 +10,18 @@ project_root: "{{ playbook_dir | dirname }}"
 # combination.
 # Registry namespace cwbitz/ because no official OpenWrt source-build image exists
 # (openwrt/rootfs, /imagebuilder and /sdk are different things); a bare name would
-# shadow the official Docker Hub namespace.
-build_image_default: "cwbitz/openwrt:buildroot"
+# shadow the official Docker Hub namespace. No tag: `latest` is implied below.
+build_image_default: "cwbitz/openwrt-buildroot"
+
+# A variant may name its own image (`source.build_image`); empty uses the default.
+# The role never re-tags an override: it builds it only from a machine-local
+# definition (inventory/custom/build-image/Dockerfile), otherwise uses or pulls it.
+build_image_override: "{{ (source | default({})).build_image | default('', true) }}"
+build_image: >-
+  {{ build_image_override if (build_image_override | length) > 0
+     else build_image_default }}
+build_image_name: "{{ build_image.split(':')[0] }}"
+build_image_tag: "{{ (build_image.split(':') + ['latest'])[1] }}"
 build_image_digest: >-
   {{ lookup('file', project_root ~ '/roles/buildroot/files/Dockerfile')
      | hash('sha256') }}

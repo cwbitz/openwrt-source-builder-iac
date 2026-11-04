@@ -74,10 +74,11 @@ and `vault*.yml` are local-only.
 - **The build image** is built on the build host from
   `roles/buildroot/files/Dockerfile` (copied to
   `~/.cache/openwrt-builder/image/Dockerfile`): `setup` rebuilds it only when
-  that file changes, under one stable tag (`openwrt:buildroot`). The recorded
-  metadata names the tag and the Dockerfile digest, so an artifact identifies the
-  exact environment without a manual version suffix; `build_image_override`
-  points a machine at its own image when it needs extra tools.
+  that file changes, under one stable tag (`cwbitz/openwrt-buildroot`). The
+  recorded metadata names the tag and the Dockerfile digest, so an artifact
+  identifies the exact environment without a manual version suffix. A variant that
+  needs extra tools sets `source.build_image` and is built from the gitignored
+  `inventory/custom/build-image/Dockerfile`.
 
 ## Connection identity and host bootstrap
 

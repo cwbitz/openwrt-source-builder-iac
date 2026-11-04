@@ -10,10 +10,6 @@ operator_knob_schema:
     and ((build_variants is sequence) and not (build_variants is string)
     and not (build_variants is mapping))
     and ((build_variants | default('', true) | string | trim | length) > 0)
-  build_image_override: >-
-    (build_image_override is not defined)
-    or (build_image_override == '')
-    or (build_image_override is match('^[a-z0-9][a-z0-9._/-]*:[A-Za-z0-9._-]+$'))
   source_min_free_gb: >-
     (source_min_free_gb is not defined)
     or ((source_min_free_gb | string is match('^[0-9]+$'))

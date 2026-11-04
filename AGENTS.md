@@ -71,12 +71,13 @@ build_variants:
         - CONFIG_KERNEL_DEBUG_INFO_REDUCED=n
 ```
 
-The build environment is one image with a stable tag (`openwrt:buildroot`,
-built from `roles/buildroot/files/Dockerfile`), not a per-variant knob. The role
-re-tags it when the Dockerfile changes and records the Dockerfile digest in
-`build-info/source.json`; `build_image_override` in
-`group_vars/builders/main.yml` points a machine at its own image (extra tools)
-without changing this project.
+The build environment is one image (`cwbitz/openwrt-buildroot`, built from
+`roles/buildroot/files/Dockerfile`): the role re-tags it when that file changes
+and records the Dockerfile digest in `build-info/source.json`. A variant that
+needs different tools sets `source.build_image`; the role then builds that image
+from `inventory/custom/build-image/Dockerfile` when that gitignored file exists,
+otherwise it uses or pulls the reference as-is. Nothing is re-tagged under a
+name it did not build.
 
 - **`source.kernel`** entries must be `CONFIG_<NAME>=y|m|n`. A value dropped by
   `make defconfig` fails the build instead of silently shipping a kernel without

@@ -22,7 +22,7 @@
 - name: Build the firmware image in the pinned build container
   community.docker.docker_container:
     name: "{{ source_container_name }}"
-    image: "{{ source_build_image }}"
+    image: "{{ build_image }}"
     user: "{{ ansible_user_uid }}:{{ ansible_user_gid }}"
     working_dir: /build
     command: ["/bin/bash", "/work/build.sh"]

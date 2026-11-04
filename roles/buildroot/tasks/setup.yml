@@ -17,25 +17,58 @@
     mode: "0644"
   register: source_dockerfile
 
-- name: Ensure the pinned build environment image is present
+- name: Ensure the project's build environment image is present
   community.docker.docker_image:
     name: "{{ build_image_default.split(':')[0] }}"
-    tag: "{{ build_image_default.split(':')[1] }}"
+    tag: "{{ (build_image_default.split(':') + ['latest'])[1] }}"
     source: build
     build:
       path: "{{ source_image_dir }}"
       pull: false
     force_source: "{{ source_dockerfile is changed }}"
     state: present
-  when: not (build_image_override | default('', true) | length > 0)
 
-- name: Ensure the overridden build environment image is present
+- name: Check for a machine-local build environment definition
+  ansible.builtin.stat:
+    path: "{{ project_root }}/inventory/custom/build-image/Dockerfile"
+  delegate_to: localhost
+  become: false
+  register: build_image_definition
+
+- name: Install the machine-local build environment definition
+  ansible.builtin.copy:
+    src: "{{ project_root }}/inventory/custom/build-image/Dockerfile"
+    dest: "{{ source_image_dir }}/Dockerfile.derived"
+    mode: "0644"
+  register: source_derived_dockerfile
+  when:
+    - build_image_override | length > 0
+    - build_image_definition.stat.exists
+
+- name: Build the variant's machine-local build environment image
   community.docker.docker_image:
-    name: "{{ source_build_image.split(':')[0] }}"
-    tag: "{{ source_build_image.split(':')[1] }}"
+    name: "{{ build_image_name }}"
+    tag: "{{ build_image_tag }}"
+    source: build
+    build:
+      path: "{{ source_image_dir }}"
+      dockerfile: Dockerfile.derived
+      pull: false
+    force_source: "{{ source_derived_dockerfile is changed }}"
+    state: present
+  when:
+    - build_image_override | length > 0
+    - build_image_definition.stat.exists
+
+- name: Ensure the variant's external build environment image is present
+  community.docker.docker_image:
+    name: "{{ build_image_name }}"
+    tag: "{{ build_image_tag }}"
     source: local
     state: present
-  when: build_image_override | default('', true) | length > 0
+  when:
+    - build_image_override | length > 0
+    - not build_image_definition.stat.exists
 
 - name: Initialize the source tree repository
   ansible.builtin.command:

@@ -92,7 +92,7 @@
         unknown_keys: >-
           {{ src.keys() | difference(
                ['ref', 'target', 'profile', 'repo_url', 'update', 'jobs', 'clean',
-                'ccache', 'kernel']) | list }}
+                'ccache', 'build_image', 'kernel']) | list }}
       ansible.builtin.assert:
         that:
           - unknown_keys | length == 0
@@ -113,6 +113,11 @@
           - src.get('profile', '') is string
           - (src.get('profile', '') | trim | length) > 0
           - src.get('profile', '') is match('^[A-Za-z0-9][A-Za-z0-9_.-]*$')
+          - src.get('build_image', '') is string
+          - >-
+            src.get('build_image', '') == ''
+            or src.get('build_image', '')
+               is match('^[a-z0-9][a-z0-9._/-]*:[A-Za-z0-9._-]+$')
           - src.get('kernel', []) is sequence
           - src.get('kernel', []) is not string
           - src.get('kernel', []) | reject('string') | list | length == 0

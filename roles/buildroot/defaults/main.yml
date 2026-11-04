@@ -25,13 +25,6 @@ extra_firmware_name: "{{ (build_variant | default({})).extra_firmware_name | def
 disabled_services: "{{ (build_variant | default({})).disabled_services | default('') }}"
 rootfs_partsize: "{{ (build_variant | default({})).rootfs_partsize | default('') }}"
 
-# Machine-wide override: empty uses the project's own image. Point it at your own
-# repository:tag to add tools without changing this project.
-build_image_override: ""
-source_build_image: >-
-  {{ build_image_override if (build_image_override | default('', true) | length) > 0
-     else build_image_default }}
-
 build_dir: "{{ ansible_facts.user_dir }}/.cache/openwrt-builder"
 # Control-node artifact directory. The name carries the backend, the target and
 # the pinned ref, so a directory stays self-describing even when two IaC

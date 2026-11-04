@@ -36,7 +36,8 @@ Operational procedures for building OpenWrt firmware from source with
 mise install
 # One inventory host = one build machine; list its variants in the machine's main.yml.
 # Extra tools in the build image: see docs/configuration.md ("The build environment
-# and extra tooling") and set build_image_override in host_vars/<machine>/main.yml.
+# and extra tooling"): per variant `source.build_image` plus an optional
+# inventory/custom/build-image/Dockerfile.
 make host-init HOST=builder-1 HOST_IP=203.0.113.50   # scaffolds group_vars + host_vars/<machine>/
 # edit inventory/host_vars/builder-1/main.yml: source.ref/target/profile,
 # kernel options, packages and settings
@@ -171,11 +172,12 @@ helper chatter is silenced (`QUIET=1`) and the result is printed per variant.
 - Pin `source.ref` to a tag or commit; branches move.
 - The resolved commit and every feed's `HEAD` are recorded in
   `build-info/source.json`, together with the final `.config` and its SHA256.
-- The build image has one stable name (`openwrt:buildroot`): the role re-tags it
-  whenever `roles/buildroot/files/Dockerfile` changes, and `build-info/source.json`
-  records the Dockerfile's digest next to it, so an artifact still identifies the
-  exact environment. A machine that needs extra tools sets `build_image_override`
-  in `group_vars/builders/main.yml` to its own repository:tag.
+- The build image has one stable name (`cwbitz/openwrt-buildroot`): the role
+  re-tags it whenever `roles/buildroot/files/Dockerfile` changes, and
+  `build-info/source.json` records the Dockerfile's digest next to it, so an
+  artifact still identifies the exact environment. A variant that needs extra
+  tools sets `source.build_image` and is built from
+  `inventory/custom/build-image/Dockerfile`.
 - The cache key includes the kernel options, so two variants cannot silently share
   a tree with a different kernel configuration.
 

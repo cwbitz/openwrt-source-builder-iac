@@ -5,7 +5,7 @@
 # project's apt state changing the other's build output.
 #
 # The tag this image is built and referenced by lives in
-# roles/buildroot/vars/main.yml (`source_build_image`); a tag bump is a
+# roles/buildroot/vars/main.yml (`build_image`); a tag bump is a
 # build-environment change and belongs there, not in this file.
 # Debian (glibc) on purpose: OpenWrt builds its host tools against glibc, while a
 # musl host (Alpine) needs argp/fts/obstack/libintl shims and is not supported.
@@ -22,7 +22,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
 # the same host tools for every target, so this set is target-independent: one
 # image serves every target/profile a variant can select. Package-specific host
 # tools (a JDK for Java packages, for example) are out of scope by design: build
-# a derived image and point `source_build_image` at it.
+# a derived image and point `build_image` at it.
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
       bash bc binutils bison build-essential bzip2 ca-certificates ccache \

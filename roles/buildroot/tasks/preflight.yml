@@ -136,7 +136,7 @@
 - name: Show the resolved build plan
   ansible.builtin.debug:
     msg:
-      - "Variant {{ build_id }}: {{ source_build_image }}"
+      - "Variant {{ build_id }}: {{ build_image }}"
       - "Source {{ source_repo_url }} @ {{ source.ref }} -> {{ source.target }} ({{ target_profile }})"
       - "Cache key {{ source_cache_key }} -> {{ source_dir }}"
       - "Jobs {{ source_jobs_effective }} ({{ ansible_facts.processor_vcpus }} vCPU, {{ ansible_facts.memtotal_mb }} MB RAM)"

@@ -33,7 +33,7 @@
       - "== {{ build_id }} =="
       - "Source {{ source_repo_url }} @ {{ source.ref }}"
       - "Target {{ source.target }} / profile {{ target_profile }}"
-      - "Build image {{ source_build_image }}"
+      - "Build image {{ build_image }}"
       - "Kernel options {{ source_kernel | default([]) }}"
       - >-
         Cached tree: {{ 'missing (run make build first)' if not
