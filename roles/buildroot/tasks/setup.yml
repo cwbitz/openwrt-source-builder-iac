@@ -19,14 +19,23 @@
 
 - name: Ensure the pinned build environment image is present
   community.docker.docker_image:
-    name: "{{ source_build_image.split(':')[0] }}"
-    tag: "{{ source_build_image.split(':')[1] }}"
+    name: "{{ build_image_default.split(':')[0] }}"
+    tag: "{{ build_image_default.split(':')[1] }}"
     source: build
     build:
       path: "{{ source_image_dir }}"
       pull: false
     force_source: "{{ source_dockerfile is changed }}"
     state: present
+  when: not (build_image_override | default('', true) | length > 0)
+
+- name: Ensure the overridden build environment image is present
+  community.docker.docker_image:
+    name: "{{ source_build_image.split(':')[0] }}"
+    tag: "{{ source_build_image.split(':')[1] }}"
+    source: local
+    state: present
+  when: build_image_override | default('', true) | length > 0
 
 - name: Initialize the source tree repository
   ansible.builtin.command:

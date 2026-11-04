@@ -8,7 +8,10 @@ project_root: "{{ playbook_dir | dirname }}"
 # deliberate: OpenWrt's host tools build against glibc, while a musl host
 # (Alpine) needs argp/fts/obstack/libintl shims and is not a supported
 # combination.
-build_image_default: "openwrt:buildroot"
+# Registry namespace cwbitz/ because no official OpenWrt source-build image exists
+# (openwrt/rootfs, /imagebuilder and /sdk are different things); a bare name would
+# shadow the official Docker Hub namespace.
+build_image_default: "cwbitz/openwrt:buildroot"
 build_image_digest: >-
   {{ lookup('file', project_root ~ '/roles/buildroot/files/Dockerfile')
      | hash('sha256') }}

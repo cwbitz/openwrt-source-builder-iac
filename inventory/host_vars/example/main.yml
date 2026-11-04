@@ -13,6 +13,15 @@ docker_registry_mirrors: []
 # A full source build peaks around 30 GB (build_dir + dl/ + ccache/).
 source_min_free_gb: 25
 
+# [OPTIONAL] Build environment for THIS machine. Empty uses the project's pinned
+# image (`cwbitz/openwrt:buildroot`, built on the host from
+# roles/buildroot/files/Dockerfile). Set it to your own repository:tag when the
+# machine needs extra tools; the role then uses that image as-is (local image if
+# present, otherwise pulled) and never re-tags it:
+#   docker build -t myorg/openwrt:buildroot-java .   # your Dockerfile, FROM cwbitz/openwrt:buildroot
+# The artifact records the reference and the project Dockerfile digest.
+build_image_override: ""
+
 build_variants:
   - name: main
     # [REQUIRED] OpenWrt source build settings.

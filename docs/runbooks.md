@@ -35,6 +35,8 @@ Operational procedures for building OpenWrt firmware from source with
 ```bash
 mise install
 # One inventory host = one build machine; list its variants in the machine's main.yml.
+# Extra tools in the build image: see docs/configuration.md ("The build environment
+# and extra tooling") and set build_image_override in host_vars/<machine>/main.yml.
 make host-init HOST=builder-1 HOST_IP=203.0.113.50   # scaffolds group_vars + host_vars/<machine>/
 # edit inventory/host_vars/builder-1/main.yml: source.ref/target/profile,
 # kernel options, packages and settings

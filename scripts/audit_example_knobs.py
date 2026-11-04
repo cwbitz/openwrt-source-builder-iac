@@ -36,8 +36,7 @@ VARIANT_ROOTS = ["roles/buildroot/defaults/main.yml", "roles/buildroot/vars/main
 TOOLING = {"helper_vault_password_file", "helper_ansible_vault_bin"}
 INTERNAL = {"build_dir", "artifacts_dir", "artifact_id", "target_profile",
             "source_build_image"}
-GROUP_KNOBS = {"create_admin_account", "sshd_hardening_enabled",
-               "sshd_permit_root_login", "build_image_override"}
+GROUP_KNOBS = {"create_admin_account", "sshd_hardening_enabled", "sshd_permit_root_login"}
 EXTRA = {"build_variants"}
 
 KEY_RE = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*):\s*(.*)$")
