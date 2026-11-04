@@ -11,7 +11,6 @@ inventory/group_vars/builders/main.yml
 # still dim the folder itself even though git tracks its contents.
 inventory/host_vars/*
 !inventory/host_vars/example
-inventory/custom/
 collections/
 .cache/
 .ansible/

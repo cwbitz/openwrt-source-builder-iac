@@ -75,9 +75,9 @@ The build environment is one image (`cwbitz/openwrt-buildroot`, built from
 `roles/buildroot/files/Dockerfile`): the role re-tags it when that file changes
 and records the Dockerfile digest in `build-info/source.json`. A variant that
 needs different tools sets `source.build_image`; the role then builds that image
-from `inventory/custom/build-image/Dockerfile` when that gitignored file exists,
-otherwise it uses or pulls the reference as-is. Nothing is re-tagged under a
-name it did not build.
+from `inventory/custom/build-image/Dockerfile` (copy the committed `.example`)
+when that file exists, otherwise it uses or pulls the reference as-is. Nothing is
+re-tagged under a name it did not build.
 
 - **`source.kernel`** entries must be `CONFIG_<NAME>=y|m|n`. A value dropped by
   `make defconfig` fails the build instead of silently shipping a kernel without

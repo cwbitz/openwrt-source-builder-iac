@@ -1,0 +1,17 @@
+# Optional machine-local layer on the project's build image.
+#
+# Copy it to `Dockerfile` in this directory and it is built on the build machine
+# for every variant whose `source.build_image` names the image below:
+#
+#   cp inventory/custom/build-image/Dockerfile.example \
+#      inventory/custom/build-image/Dockerfile
+#
+# Keep committed examples desensitized: no real registries, hostnames, paths or
+# credentials.
+FROM cwbitz/openwrt-buildroot
+
+# Extra host tools this machine needs; leave the base set in place.
+# RUN apt-get update \
+#  && apt-get install -y --no-install-recommends \
+#       openjdk-21-jdk-headless \
+#  && rm -rf /var/lib/apt/lists/*

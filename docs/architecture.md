@@ -78,7 +78,7 @@ and `vault*.yml` are local-only.
   recorded metadata names the tag and the Dockerfile digest, so an artifact
   identifies the exact environment without a manual version suffix. A variant that
   needs extra tools sets `source.build_image` and is built from the gitignored
-  `inventory/custom/build-image/Dockerfile`.
+  `inventory/custom/build-image/Dockerfile` (copy the committed `.example`).
 
 ## Connection identity and host bootstrap
 
@@ -131,8 +131,8 @@ vault (`vault_host_<id>_password`) and the non-secret group knobs
 - SSH prefers a key (explicit path or agent) then the password, capped at one
   prompt. The private key is never stored in the vault — only its path.
 - **The built image carries the secrets it was built with** — treat fetched
-  artifacts as sensitive, and keep `inventory/custom/` (which may hold
-  `administration.root_password`) out of version control.
+  artifacts as sensitive. `inventory/custom/` is tracked, so never put a
+  `administration.root_password` or any credential in it.
 
 ## Variant isolation
 

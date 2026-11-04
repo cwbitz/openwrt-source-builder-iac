@@ -109,8 +109,8 @@ can build `main` on a Java-capable image and `ap` on the default one:
 | set | present | build that image on the machine from the local Dockerfile, rebuilt when it changes |
 | set | absent | use the reference as-is: the local image if present, otherwise pull it |
 
-The machine-local definition is gitignored (`inventory/custom/`) and is layered
-on the project image:
+The optional machine-local definition is `inventory/custom/build-image/Dockerfile`
+(copy the committed `Dockerfile.example`) and is layered on the project image:
 
 ```dockerfile
 # inventory/custom/build-image/Dockerfile
@@ -309,7 +309,8 @@ overlays, so it can add files or override module files:
 custom_overlay: "{{ inventory_dir }}/custom/{{ inventory_hostname }}/{{ build_variant.name }}"
 ```
 
-Layout (per machine and variant; `inventory/custom/` is gitignored):
+Layout (per machine and variant; `inventory/custom/` is part of this repo, so
+commit only desensitized files there):
 
 ```text
 inventory/custom/<machine>/<variant>/
@@ -329,7 +330,8 @@ uci commit network
 
 The role preserves file modes, so `chmod +x` the uci-defaults script. Use a
 separate directory per variant when the values differ. Custom files may contain
-secrets; keep `inventory/custom/` out of version control.
+secrets: `inventory/custom/` is tracked, so anything you put there is published
+with the repository.
 
 For a reusable feature, add a module to the role instead (`module_names` +
 `files/overlay/<name>` or `templates/overlay/<name>`); `custom_overlay` is for
