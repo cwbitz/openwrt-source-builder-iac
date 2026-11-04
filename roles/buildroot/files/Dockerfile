@@ -4,28 +4,31 @@
 # machine stays free of compilers and two IaC projects can share it without one
 # project's apt state changing the other's build output.
 #
-# Build:
-#   docker build -t openwrt-buildroot:debian13-r2 roles/buildroot/files
-#
-# A tag bump is a build-environment change: keep `source_build_image` in
-# roles/buildroot/vars/main.yml in step so the artifacts name the environment.
+# The tag this image is built and referenced by lives in
+# roles/buildroot/vars/main.yml (`source_build_image`); a tag bump is a
+# build-environment change and belongs there, not in this file.
 FROM debian:13-slim
 
 ENV DEBIAN_FRONTEND=noninteractive \
     LANG=C.UTF-8 \
     LC_ALL=C.UTF-8
 
-# The OpenWrt host toolchain: the `make prereq` set plus the host tools the build
-# invokes itself (cmake, ninja, pkg-config) and the development libraries those
-# builds link against. The set is a superset of what every supported variant
-# needs, so enabling a build feature never requires extending the image.
+# The host toolchain OpenWrt needs: the documented prerequisites (binutils, gcc,
+# g++, make, perl, python3, rsync, subversion, unzip, ...) plus every host tool
+# the build compiles for itself (cmake, ninja, pkg-config, bison/flex, gettext,
+# swig) and the development libraries those builds link against. OpenWrt builds
+# the same host tools for every target, so this set is target-independent: one
+# image serves every target/profile a variant can select. Package-specific host
+# tools (a JDK for Java packages, for example) are out of scope by design: build
+# a derived image and point `source_build_image` at it.
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
       bash bc binutils bison build-essential bzip2 ca-certificates ccache \
       clang cmake cpio device-tree-compiler diffutils dwarves file findutils flex \
       g++ gawk gcc gcc-multilib g++-multilib gettext git gzip kmod \
-      libelf-dev libdw-dev liblzma-dev libncurses-dev libssl-dev \
-      make ninja-build patch perl pkg-config python3 python3-setuptools rsync \
+      libbz2-dev libelf-dev libdw-dev liblzma-dev libncurses-dev libssl-dev \
+      make ninja-build patch perl pkg-config python3 python3-dev \
+      python3-setuptools rsync \
       subversion swig tar time unzip wget xz-utils zip zlib1g-dev zstd \
  && rm -rf /var/lib/apt/lists/*
 
