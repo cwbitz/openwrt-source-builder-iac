@@ -71,8 +71,21 @@ if [ -n "${OPENWRT_EXTRA_FIRMWARE_NAME:-}" ]; then
     make_args+=(EXTRA_IMAGE_NAME="${OPENWRT_EXTRA_FIRMWARE_NAME}")
 fi
 
+# `world` builds the host tools in parallel, and some of them do not declare
+# their host-tool dependencies (tools/dwarves configures before tools/cmake and
+# tools/elfutils are installed), so the first parallel run can fail spuriously.
+# Retry once: the second attempt resumes from the finished tools. A real compile
+# error fails both attempts.
 log "make world"
-make -j"${OPENWRT_JOBS}" world "${make_args[@]}"
+attempt=1
+until make -j"${OPENWRT_JOBS}" world "${make_args[@]}"; do
+    if [ "$attempt" -ge 2 ]; then
+        echo "ERROR: make world failed on both attempts" >&2
+        exit 1
+    fi
+    echo ">>> retrying make world after a failed first run"
+    attempt=$((attempt + 1))
+done
 
 log "verify the kernel configuration"
 kernel_config=$(find build_dir/target-*/linux-* -maxdepth 2 -type f -name .config | head -n1)

@@ -124,7 +124,9 @@ build.
    silently shipping a kernel without BTF/ftrace; the final config is copied to
    `/work/config.final`;
 4. `make download`, then `make world` (toolchain, kernel, packages, and the
-   images — `world` installs them, `make image` no longer exists on these refs),
+   images — `world` installs them, `make image` no longer exists on these refs;
+   `world` is retried once because a parallel host-tool build can start before
+   the host tool it links against is installed),
    passing only the `EXTRA_IMAGE_NAME` prefix; the rootfs overlay comes from
    `<tree>/files`, which `include/image.mk` reads directly, and the rootfs size
    comes from `CONFIG_TARGET_ROOTFS_PARTSIZE` in `.config` (`FILES=` would be read
