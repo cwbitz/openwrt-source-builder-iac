@@ -90,7 +90,7 @@ orchestration and overlay rendering.
 | Knob | Default | Effect |
 |------|---------|--------|
 | `artifacts_dir` | `<repo>/artifacts/<artifact_id>` | Control-node destination (always fetched); `<artifact_id>` = `<machine>-<variant>-source-<target>-<ref>` |
-| `output_dir` | `~/.cache/openwrt-builder/source/<key>/bin` | Builder-side `bin/` staging, removed before the next build |
+| `source_bin_dir` | `~/.cache/openwrt-builder/source/<key>/bin` | Builder-side `bin/` staging, removed before the next build |
 
 Only `targets/<target>/<subtarget>/` is fetched (`bin/packages` is not); the
 `artifacts/` directory is local-only and gitignored, and is created on demand.
