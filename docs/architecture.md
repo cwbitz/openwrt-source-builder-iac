@@ -74,8 +74,9 @@ and `vault*.yml` are local-only.
 - **The build image** is built on the build host from
   `roles/buildroot/files/Dockerfile` (copied to
   `~/.cache/openwrt-builder/image/Dockerfile`): `setup` rebuilds it only when
-  that file changes. A tag bump is a build-environment change and belongs in the
-  variant's `source.build_image`, so the recorded metadata names the environment.
+  that file changes. A tag bump is a build-environment change and belongs in
+  `source_build_image` (`roles/buildroot/vars/main.yml`), so the recorded
+  metadata names the environment.
 
 ## Connection identity and host bootstrap
 

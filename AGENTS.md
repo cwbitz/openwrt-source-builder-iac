@@ -49,10 +49,10 @@ lives in `roles/buildroot/`; the opt-in key-only SSH hardening lives in
 
 ## Variant schema
 
-Shared with the ImageBuilder project (`target_profile`, `packages`, `system`,
-`network`, `administration`, `statistics`, `custom_overlay`,
-`extra_firmware_name`, `disabled_services`, `rootfs_partsize`), plus one
-source-only block:
+Shared with the ImageBuilder project (`packages`, `system`, `network`,
+`administration`, `statistics`, `custom_overlay`, `extra_firmware_name`,
+`disabled_services`, `rootfs_partsize`), plus one source-only block that also
+carries the device profile:
 
 ```yaml
 build_variants:
@@ -60,17 +60,20 @@ build_variants:
     source:
       ref: v25.12.6                 # [REQUIRED] tag/branch/commit-ish (pinned)
       target: mediatek/filogic      # [REQUIRED] <target>/<subtarget>
+      profile: glinet_gl-mt6000     # [REQUIRED] profile of that target
       repo_url: https://git.openwrt.org/openwrt/openwrt.git
       update: false                 # git fetch before building
       jobs: ""                      # empty => min(nproc, RAM-GB / 2)
       clean: false                  # make clean (keeps dl/ and ccache/)
       ccache: true                  # shared ccache directory
-      build_image: openwrt-buildroot:debian13-r2
       kernel:                       # asserted again after `make defconfig`
         - CONFIG_KERNEL_DEBUG_INFO_BTF=y
         - CONFIG_KERNEL_DEBUG_INFO_REDUCED=n
-    target_profile: <profile>
 ```
+
+The build environment is a single pinned image (`source_build_image` in
+`roles/buildroot/vars/main.yml`), not a per-variant knob: the artifacts record it,
+so a toolchain change means bumping that tag with the Dockerfile.
 
 - **`source.kernel`** entries must be `CONFIG_<NAME>=y|m|n`. A value dropped by
   `make defconfig` fails the build instead of silently shipping a kernel without
@@ -92,7 +95,7 @@ build_variants:
 Task slices, individually selectable with `--tags`
 (`preflight|modules|packages|setup|config|overlay|build|fetch|record`):
 
-1. **preflight** — asserts `source.ref`/`source.target`/`target_profile` (and no
+1. **preflight** — asserts `source.ref`/`source.target`/`source.profile` (and no
    placeholders), Docker CLI/daemon/SDK on the host, the free-space floor
    (`source_min_free_gb`) and derives the effective job count.
 2. **modules / packages** — same semantics as the ImageBuilder project.

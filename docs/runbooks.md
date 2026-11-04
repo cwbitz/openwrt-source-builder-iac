@@ -36,7 +36,7 @@ Operational procedures for building OpenWrt firmware from source with
 mise install
 # One inventory host = one build machine; list its variants in the machine's main.yml.
 make host-init HOST=builder-1 HOST_IP=203.0.113.50   # scaffolds group_vars + host_vars/<machine>/
-# edit inventory/host_vars/builder-1/main.yml: source.ref/target, target_profile,
+# edit inventory/host_vars/builder-1/main.yml: source.ref/target/profile,
 # kernel options, packages and settings
 make host-init HOST=openwrt-src-prod-2 HOST_IP=203.0.113.51   # repeat for each machine
 make install
@@ -161,7 +161,7 @@ make info EXTRA='--limit builder-1'   # single machine
 options without building. It lists the target's profiles from the **cached**
 source tree, so on a fresh machine run `make build` once (or inspect
 `target/linux/<target>/<subtarget>/profiles` in a checkout) before choosing
-`target_profile`; when no tree is cached it says so explicitly. The dependency
+`source.profile`; when no tree is cached it says so explicitly. The dependency
 helper chatter is silenced (`QUIET=1`) and the result is printed per variant.
 
 ## 5. Reproducibility
@@ -169,9 +169,9 @@ helper chatter is silenced (`QUIET=1`) and the result is printed per variant.
 - Pin `source.ref` to a tag or commit; branches move.
 - The resolved commit and every feed's `HEAD` are recorded in
   `build-info/source.json`, together with the final `.config` and its SHA256.
-- `source.build_image` names the build environment; a Dockerfile change without a
-  tag bump rebuilds the image on the host but leaves the recorded name unchanged.
-  Bump the tag when the environment changes.
+- `source_build_image` (`roles/buildroot/vars/main.yml`) names the build
+  environment; a Dockerfile change without a tag bump rebuilds the image on the
+  host but leaves the recorded name unchanged. Bump both together.
 - The cache key includes the kernel options, so two variants cannot silently share
   a tree with a different kernel configuration.
 
@@ -239,7 +239,7 @@ host keeps its old login policy. The provider console remains the recovery path.
 | Need the auto-generated password | `make vault-view` |
 | `build` fails: vault password file missing | Run `make vault-init` |
 | `host-bootstrap` user tasks fail (sudo/become) | The probed identity needs sudo or root; the first run must reach the host as `root` or a sudo-capable `admin` |
-| "needs source.ref, source.target … and target_profile" | Replace the example placeholders; `make host-init` copies them verbatim |
+| "needs source.ref, source.target … and source.profile" | Replace the example placeholders; `make host-init` copies them verbatim |
 | "cannot fetch '<ref>'" | Check the tag/branch/commit and network access; for a slow `git.openwrt.org`, set `source.repo_url` to a mirror |
 | preflight: "only N GB free" | Free space on the volume holding `~/.cache/openwrt-builder`, or lower `source_min_free_gb` if you know the host has room elsewhere |
 | preflight: "Docker CLI not found" | Install Docker and ensure it is on PATH on the builder |

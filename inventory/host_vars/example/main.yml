@@ -22,6 +22,8 @@ build_variants:
       ref: "<release-tag-or-commit>"
       # [REQUIRED] <target>/<subtarget>, e.g. mediatek/filogic, x86/64.
       target: "<target>/<subtarget>"
+      # [REQUIRED] device profile from target/linux/<target>/<subtarget>/profiles.
+      profile: "<profile>"
       # [OPTIONAL] upstream repository; use a mirror when git.openwrt.org is slow.
       repo_url: "https://git.openwrt.org/openwrt/openwrt.git"
       # [OPTIONAL] git fetch before building (off = reuse the cached tree).
@@ -32,8 +34,6 @@ build_variants:
       clean: false
       # [OPTIONAL] ccache across builds (needs disk; disable on small volumes).
       ccache: true
-      # [OPTIONAL] pinned build-environment image (this project's own Dockerfile).
-      build_image: "openwrt-buildroot:debian13-r2"
       # [OPTIONAL] extra kernel options merged into .config before defconfig.
       # Every entry (`=y`, `=m` or `=n`) is asserted again after defconfig; a
       # dropped option fails the build instead of silently shipping a kernel
@@ -47,8 +47,6 @@ build_variants:
         - CONFIG_KERNEL_FTRACE=y
         - CONFIG_KERNEL_FUNCTION_TRACER=y
         - CONFIG_KERNEL_DYNAMIC_FTRACE=y
-    # [REQUIRED] device profile from target/linux/<target>/<subtarget>/profiles.
-    target_profile: "<profile>"
     # A module is enabled by listing any of its fields; omit the block (or leave
     # it empty: `system: {}`) to keep the module disabled. `disable-ipv6` is a
     # plain boolean flag.

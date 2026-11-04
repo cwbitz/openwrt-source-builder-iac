@@ -1,5 +1,10 @@
 ---
 project_root: "{{ playbook_dir | dirname }}"
+
+# The single pinned build environment (files/Dockerfile). A tag bump is a
+# build-environment change: keep this value and the Dockerfile in step so the
+# artifacts name the environment that produced them.
+source_build_image: "openwrt-buildroot:debian13-r2"
 build_id: "{{ inventory_hostname }}-{{ (build_variant | default({})).name | default('') }}"
 builder_workdir: "{{ build_dir }}/work/{{ build_id }}"
 

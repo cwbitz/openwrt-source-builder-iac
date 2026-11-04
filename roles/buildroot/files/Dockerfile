@@ -7,8 +7,8 @@
 # Build:
 #   docker build -t openwrt-buildroot:debian13-r2 roles/buildroot/files
 #
-# A tag bump is a build-environment change: record it in the variant's
-# `source.build_image` so the artifacts say which environment produced them.
+# A tag bump is a build-environment change: keep `source_build_image` in
+# roles/buildroot/vars/main.yml in step so the artifacts name the environment.
 FROM debian:13-slim
 
 ENV DEBIAN_FRONTEND=noninteractive \

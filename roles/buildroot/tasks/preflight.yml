@@ -21,7 +21,6 @@
     source_update: "{{ source.update | default(false) | bool }}"
     source_clean: "{{ source.clean | default(false) | bool }}"
     source_ccache: "{{ source.ccache | default(true) | bool }}"
-    source_build_image: "{{ source.build_image | default('openwrt-buildroot:debian13-r2') }}"
     source_kernel: "{{ source.kernel | default([]) }}"
 
 - name: Check the Docker CLI is available on the build host

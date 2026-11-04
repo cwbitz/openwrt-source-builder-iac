@@ -3,7 +3,7 @@
 # derived from it (see tasks/preflight.yml) so there is a single definition.
 source: "{{ (build_variant | default({})).source | default({}) }}"
 
-target_profile: "{{ (build_variant | default({})).target_profile | default('') }}"
+target_profile: "{{ (source | default({})).profile | default('') }}"
 packages: "{{ (build_variant | default({})).packages | default([]) }}"
 custom_overlay: "{{ (build_variant | default({})).custom_overlay | default('') }}"
 network: "{{ (build_variant | default({})).network | default({}) }}"

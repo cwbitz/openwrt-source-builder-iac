@@ -39,15 +39,15 @@ names, and any remaining example placeholder (`<release-tag-or-commit>`,
 
 ## Variant schema
 
-Each entry in a machine's `build_variants` list describes one build. `name`,
-`source.ref`, `source.target` and `target_profile` are required; every other key
+Each entry in a machine's `build_variants` list describes one build. `name` and
+the `source` block's `ref`, `target` and `profile` are required; every other key
 is optional and falls back to the role default.
 
 | Key | Meaning |
 |-----|---------|
 | `name` | Variant name; forms the build id `<machine>-<variant>` |
 | `source` | **[REQUIRED]** the source build block (see below) |
-| `target_profile` | **[REQUIRED]** device profile from `target/linux/<target>/<subtarget>/profiles` (`make info` lists them) |
+| `source.profile` | **[REQUIRED]** device profile from `target/linux/<target>/<subtarget>/profiles` (`make info` lists them) |
 | `packages` | Exact package list; a `-pkg` entry removes the package from the image (see [Packages](#packages)) |
 | `custom_overlay` | Control-node directory copied over the image rootfs after modules (see [Custom overlay](#custom-overlay)) |
 | `network` | LAN first-boot configuration (see [Network](#network)) |
@@ -66,12 +66,12 @@ root password after first boot.
 source:
   ref: v25.12.6
   target: mediatek/filogic
+  profile: glinet_gl-mt6000
   repo_url: https://git.openwrt.org/openwrt/openwrt.git
   update: false
   jobs: ""
   clean: false
   ccache: true
-  build_image: openwrt-buildroot:debian13-r2
   kernel:
     - CONFIG_KERNEL_DEBUG_INFO=y
     - CONFIG_KERNEL_DEBUG_INFO_BTF=y
@@ -82,12 +82,12 @@ source:
 |-----|---------|---------|
 | `ref` | — | **[REQUIRED]** tag, branch or commit-ish; pin a tag for a reproducible build |
 | `target` | — | **[REQUIRED]** `<target>/<subtarget>`, e.g. `mediatek/filogic`, `x86/64` |
+| `profile` | — | **[REQUIRED]** device profile of that target, e.g. `glinet_gl-mt6000`, `generic` |
 | `repo_url` | `https://git.openwrt.org/openwrt/openwrt.git` | Upstream (or mirror) repository |
 | `update` | `false` | Run `feeds update -a` before building; the tree still fetches the ref |
 | `jobs` | `""` | Parallel make jobs; empty ⇒ `min(vCPU, RAM-GB / 2)` from the RAM the guest reports — a ballooned VM shrinks it, so pin it on a build host |
 | `clean` | `false` | Run `make clean` before the build (keeps `dl/` and `ccache/`) |
 | `ccache` | `true` | Share the `ccache/` directory across builds; writes `CONFIG_DEVEL=y` + `CONFIG_CCACHE=y` + `CONFIG_CCACHE_DIR="/ccache"` (the symbol is only visible with the developer options) |
-| `build_image` | `openwrt-buildroot:debian13-r2` | Pinned build environment, built from `roles/buildroot/files/Dockerfile` |
 | `kernel` | `[]` | Extra kernel options merged into `.config`; every entry must be `CONFIG_<NAME>=y\|m\|n` (`=n` is asserted as the `# … is not set` line kconfig writes back) |
 
 ### Pinning and the cache key
@@ -370,7 +370,7 @@ operator chooses explicitly.
   variants in `host_vars/<machine>/main.yml`.
 - **Another variant on a machine**: append an entry to `build_variants` in that
   machine's `main.yml`; no role change.
-- **Another target/profile**: change `source.target` and `target_profile`;
+- **Another target/profile**: change `source.target` and `source.profile`;
   a different target starts from a fresh source tree by design.
 - **A custom module**: add `roles/buildroot/files/overlay/<name>/...` (static)
   or `templates/overlay/<name>/...` (templated), add `<name>` to `module_names`

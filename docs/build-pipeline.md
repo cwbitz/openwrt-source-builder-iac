@@ -12,7 +12,7 @@ per variant and are individually selectable with `--tags`
 ## Pipeline
 
 1. **preflight** — asserts the variant carries a usable `source` block and a real
-   `target_profile` (no example placeholder), then asserts the Docker CLI/daemon
+   `source.profile` (no example placeholder), then asserts the Docker CLI/daemon
    and the `docker` Python SDK on the build host, the free-space floor
    (`source_min_free_gb`), and derives the effective job count.
 2. **modules** — resolves the active modules: a module mapping with any field set
@@ -73,7 +73,7 @@ to the target's own defaults:
 
 A source tree has no `PACKAGES="-pkg"` syntax, so a removal is the explicit
 negative above; the build asserts the package is absent from the generated
-`.manifest` afterwards. `target_profile` is resolved by the device line, not by a
+`.manifest` afterwards. `source.profile` is resolved by the device line, not by a
 `PROFILE=` variable in `.config`.
 
 ## Overlay (overlay)

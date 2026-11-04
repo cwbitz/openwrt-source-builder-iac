@@ -60,11 +60,11 @@
         that:
           - (src.get('ref', '') | string) is not search('[<>]')
           - (src.get('target', '') | string) is not search('[<>]')
-          - (item.target_profile | default('') | string) is not search('[<>]')
+          - (src.get('profile', '') | string) is not search('[<>]')
         fail_msg: >-
           {{ inventory_hostname }}: variant {{ item.name | default('<unnamed>') }}
           still carries an example placeholder in source.ref, source.target or
-          target_profile. Replace them with real values: the target from
+          source.profile. Replace them with real values: the target from
           Makefile targets and the profile from
           target/linux/<target>/<subtarget>/profiles (make host-init copies the
           example verbatim).
@@ -91,8 +91,8 @@
         src: "{{ item.source | default({}) }}"
         unknown_keys: >-
           {{ src.keys() | difference(
-               ['ref', 'target', 'repo_url', 'update', 'jobs', 'clean', 'ccache',
-                'build_image', 'kernel']) | list }}
+               ['ref', 'target', 'profile', 'repo_url', 'update', 'jobs', 'clean',
+                'ccache', 'kernel']) | list }}
       ansible.builtin.assert:
         that:
           - unknown_keys | length == 0
@@ -110,10 +110,9 @@
           - >-
             (src.get('jobs', '') | string | length) == 0
             or ((src.get('jobs', '') | int) >= 1 and (src.get('jobs', '') | int) <= 64)
-          - src.get('build_image', '') is string
-          - >-
-            src.get('build_image', '')
-            is match('^[a-z0-9][a-z0-9._/-]*:[A-Za-z0-9._-]+$')
+          - src.get('profile', '') is string
+          - (src.get('profile', '') | trim | length) > 0
+          - src.get('profile', '') is match('^[A-Za-z0-9][A-Za-z0-9_.-]*$')
           - src.get('kernel', []) is sequence
           - src.get('kernel', []) is not string
           - src.get('kernel', []) | reject('string') | list | length == 0
@@ -124,23 +123,6 @@
           {{ inventory_hostname }}: variant {{ item.name | default('<unnamed>') }}
           has invalid source={{ item.source | default({}) | to_json }}
           {{ ('(unknown key(s): ' ~ (unknown_keys | join(', ')) ~ ')') if unknown_keys else '' }}
-        quiet: true
-      loop: "{{ build_variants }}"
-      loop_control:
-        label: "{{ item.name | default('<unnamed>') }}"
-
-    - name: Validate the target profile
-      ansible.builtin.assert:
-        that:
-          - item.target_profile is defined
-          - item.target_profile is string
-          - (item.target_profile | trim | length) > 0
-          - item.target_profile is not search('[<>]')
-          - item.target_profile is match('^[A-Za-z0-9][A-Za-z0-9_.-]*$')
-        fail_msg: >-
-          {{ inventory_hostname }}: variant {{ item.name | default('<unnamed>') }}
-          needs a real target_profile from target/linux/<target>/<subtarget>/profiles
-          (got {{ item.target_profile | default('<unset>') | to_json }}).
         quiet: true
       loop: "{{ build_variants }}"
       loop_control:
