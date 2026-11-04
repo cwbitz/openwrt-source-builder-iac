@@ -117,7 +117,7 @@
           - >-
             src.get('build_image', '') == ''
             or src.get('build_image', '')
-               is match('^[a-z0-9][a-z0-9._/-]*:[A-Za-z0-9._-]+$')
+               is match('^[a-z0-9][a-z0-9._/-]*(:[A-Za-z0-9._-]+)?$')
           - src.get('kernel', []) is sequence
           - src.get('kernel', []) is not string
           - src.get('kernel', []) | reject('string') | list | length == 0
