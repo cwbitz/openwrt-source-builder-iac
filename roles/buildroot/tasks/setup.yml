@@ -54,7 +54,9 @@
       path: "{{ source_image_dir }}"
       dockerfile: Dockerfile.derived
       pull: false
-    force_source: "{{ source_derived_dockerfile is changed }}"
+    force_source: >-
+      {{ (source_derived_dockerfile is changed)
+         or (source_dockerfile is changed) }}
     state: present
   when:
     - build_image_override | length > 0
