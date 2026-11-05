@@ -29,9 +29,9 @@ per variant and are individually selectable with `--tags`
 6. **overlay** — renders the enabled modules' uci-defaults, the `network` block
    and the variant's `custom_overlay`, and installs them as `<src>/files/`.
 7. **build** — runs the pinned build container (`defconfig` → `download` →
-   `world`), then asserts the requested kernel options survived, the
-   kernel config carries them, `.BTF` exists when requested, and removed packages
-   are absent from `.manifest`.
+   `world`), then asserts the requested kernel options survived, the kernel
+   config carries them, `.BTF` exists when requested, every requested package is
+   still `=y`, and removed packages are absent from `.manifest`.
 8. **fetch** — copies `bin/targets/...` to the control node; the scratch work
    directory is removed when the role exits.
 9. **record** — writes `artifacts/<artifact_id>/build-info/{source.json,config}`.
@@ -119,10 +119,12 @@ build.
 
 1. optional `make clean` (`source.clean`; keeps `dl/` and `ccache/`);
 2. `make defconfig` with `TMPDIR` on disk and `CCACHE_DIR=/ccache`;
-3. **asserts every requested kernel option survived `defconfig`** — the config is
-   re-derived from the dependency graph, so a missing option fails here instead of
-   silently shipping a kernel without BTF/ftrace; the final config is copied to
-   `/work/config.final`;
+3. **asserts every requested kernel option and package survived `defconfig`** —
+   the config is re-derived from the dependency graph, so a missing option fails
+   here instead of silently shipping a kernel without BTF/ftrace, and a package
+   whose definition is absent from the scanned tree (a feed that was not
+   installed) fails instead of shipping an image without it; the final config is
+   copied to `/work/config.final`;
 4. `make download`, then `make world` (toolchain, kernel, packages, and the
    images — `world` installs them, `make image` no longer exists on these refs;
    `world` is retried once because a parallel host-tool build can start before

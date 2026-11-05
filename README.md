@@ -14,10 +14,11 @@ Ansible IaC that compiles **OpenWrt from source** on a build host: pinned git re
 feeds, kernel options (BTF/ftrace and friends), packages, first-boot overlay and
 output artifacts — all declared in inventory, driven by `make build`.
 
-The build host needs nothing but Docker: the entire buildroot toolchain lives in a
-pinned image (`roles/buildroot/files/Dockerfile`), so the host stays clean and can
-be shared with `openwrt-image-builder-iac` (the ImageBuilder project) without the
-two contaminating each other.
+The build host needs Docker plus a small host-side set for `scripts/feeds`
+(`make`, `perl`, `git` and a gawk-compatible `awk`): the buildroot toolchain
+itself lives in a pinned image (`roles/buildroot/files/Dockerfile`), so the host
+stays clean and can be shared with `openwrt-image-builder-iac` (the ImageBuilder
+project) without the two contaminating each other.
 
 ## Why source instead of ImageBuilder
 

@@ -189,6 +189,33 @@
   register: source_feeds
   changed_when: false
 
+- name: Collect the feeds installed into the package tree
+  ansible.builtin.find:
+    paths: "{{ source_dir }}/package/feeds"
+    file_type: directory
+    recurse: false
+  register: source_feeds_installed
+  failed_when: false
+
+- name: Assert every configured feed is installed into the package tree
+  ansible.builtin.assert:
+    that:
+      - source_feeds_missing | length == 0
+    fail_msg: >-
+      `scripts/feeds install -a` linked no packages for:
+      {{ source_feeds_missing | join(', ') }}. An empty feed index makes the
+      install a silent no-op, which drops every package from those feeds in
+      `make defconfig`. Check that the build host's awk is gawk (mawk lacks
+      asort), then rerun.
+  vars:
+    source_feed_names: >-
+      {{ source_feeds.stdout_lines | default([])
+         | map('regex_replace', ' .*$', '') | list }}
+    source_feeds_missing: >-
+      {{ source_feed_names
+         | difference(source_feeds_installed.files | default([])
+                      | map(attribute='path') | map('basename') | list) }}
+
 - name: Show the resolved source state
   ansible.builtin.debug:
     msg:

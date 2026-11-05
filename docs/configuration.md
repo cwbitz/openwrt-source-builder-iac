@@ -195,7 +195,10 @@ name with `-` to remove it from the image (for example `-dnsmasq` +
 source tree has no ImageBuilder `PACKAGES="-pkg"` syntax, so the explicit negative
 is the mechanism, and after the build the role asserts the package is absent from
 the target's `.manifest`. Duplicate entries are deduplicated; adding and removing
-the same package is a hard error.
+the same package is a hard error. Every requested package is also asserted to
+still be `=y` right after `make defconfig`: a package whose definition is missing
+from the scanned tree (typically a feed that is not installed) is dropped without
+a message, so the build fails instead of producing an image without it.
 
 The `statistics` module owns its packages: it removes any `luci-app-statistics` /
 `collectd-mod-*` entries from this list and adds the set matching the enabled
