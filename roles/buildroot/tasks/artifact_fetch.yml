@@ -21,6 +21,15 @@
       {{ build_artifacts.files | map(attribute='path')
          | map('relpath', source_bin_dir) | list }}
 
+- name: Remove the artifact tree a previous build fetched
+  ansible.builtin.file:
+    path: "{{ artifacts_dir }}/targets"
+    state: absent
+  delegate_to: localhost
+  become: false
+  vars:
+    ansible_become: false
+
 - name: Ensure the control-node artifact directories exist
   ansible.builtin.file:
     path: "{{ artifacts_dir }}/{{ item }}"
