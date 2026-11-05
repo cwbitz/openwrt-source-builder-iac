@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/cwbitz/openwrt-source-builder-iac/compare/v0.1.0...v0.1.1) (2026-11-05)
+
+
+### Features
+
+* **build:** put the source version back in the firmware file names ([#3](https://github.com/cwbitz/openwrt-source-builder-iac/issues/3)) ([475114a](https://github.com/cwbitz/openwrt-source-builder-iac/commit/475114ad07dd74216bcca6b39cd3501b8aec7477))
+
 ## 0.1.0 (2026-11-05)
 
 
