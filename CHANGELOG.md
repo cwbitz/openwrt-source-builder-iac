@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3](https://github.com/cwbitz/openwrt-source-builder-iac/compare/v0.1.2...v0.1.3) (2026-11-05)
+
+
+### Bug Fixes
+
+* **artifacts:** drop the previous fetch before copying a new one ([#7](https://github.com/cwbitz/openwrt-source-builder-iac/issues/7)) ([bb59bca](https://github.com/cwbitz/openwrt-source-builder-iac/commit/bb59bca9ee8b975cced471cf33d933618d3362f8))
+
 ## [0.1.2](https://github.com/cwbitz/openwrt-source-builder-iac/compare/v0.1.1...v0.1.2) (2026-11-05)
 
 
