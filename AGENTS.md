@@ -69,6 +69,8 @@ build_variants:
       kernel:                       # asserted again after `make defconfig`
         - CONFIG_KERNEL_DEBUG_INFO_BTF=y
         - CONFIG_KERNEL_DEBUG_INFO_REDUCED=n
+      config:                       # non-kernel kconfig switches, same assert
+        - CONFIG_LUCI_LANG_zh_Hans=y
 ```
 
 The build environment is one image (`cwbitz/openwrt-buildroot`, built from

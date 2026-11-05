@@ -35,6 +35,7 @@
       profile: "{{ target_profile }}"
       jobs: "{{ source_jobs_effective }}"
       kernel: "{{ source_kernel | default([]) }}"
+      config: "{{ source.config | default([]) }}"
       packages: "{{ packages_final_list | default([]) }}"
       feeds: "{{ source_feeds.stdout | default('') | split('\n') | select | list }}"
       config_sha256: "{{ source_final_config.content | b64decode | hash('sha256') }}"

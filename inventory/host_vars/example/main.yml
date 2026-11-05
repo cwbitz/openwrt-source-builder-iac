@@ -53,6 +53,12 @@ build_variants:
         - CONFIG_KERNEL_FTRACE=y
         - CONFIG_KERNEL_FUNCTION_TRACER=y
         - CONFIG_KERNEL_DYNAMIC_FTRACE=y
+      # [OPTIONAL] non-kernel kconfig switches, merged into .config before
+      # defconfig and asserted afterwards. Use it for symbols that packages
+      # cannot drive: the LuCI translation packages have no prompt in kconfig and
+      # are enabled through the language switch, not by naming them in `packages`.
+      config:
+        - CONFIG_LUCI_LANG_zh_Hans=y
     # A module is enabled by listing any of its fields; omit the block (or leave
     # it empty: `system: {}`) to keep the module disabled. `disable-ipv6` is a
     # plain boolean flag.
@@ -96,9 +102,6 @@ build_variants:
       - openssl-util
       - openssh-sftp-server
       - rsync
-      - luci-i18n-base-zh-cn
-      - luci-i18n-firewall-zh-cn
-      - luci-i18n-package-manager-zh-cn
       - curl
       - vim-full
       - diffutils
