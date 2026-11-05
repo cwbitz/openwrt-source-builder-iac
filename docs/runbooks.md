@@ -264,7 +264,7 @@ host keeps its old login policy. The provider console remains the recovery path.
 | Build is far slower than before | The cache key changed (ref, target or kernel options); a full rebuild is expected. Check `~/.cache/openwrt-builder/source` |
 | `Jobs 1` in the build plan / a build far slower than the vCPU count suggests | The guest reports ballooned-down RAM, so `min(vCPU, RAM-GB/2)` collapses to 1. Pin the variant's `source.jobs`, or stop the build host from reclaiming memory (`memory_floating`) |
 | Out of disk during a build | `dl/`, `ccache/` and the tree grow together; `make cache-clean PURGE=1` resets, then the next build is full |
-| `opkg install kmod-*` fails on the device | The image has a custom kernel and module ABI; build the modules into the image instead |
+| `apk add kmod-*` fails: `unable to select packages: kernel-…: breaks: kmod-…[kernel=…]` | The image's kernel ABI hash is not the release build's, so the official kmods do not belong to this kernel. Add the module to the variant's `packages` and rebuild, or point apk at this build's own `bin/targets/.../packages`. See `docs/build-pipeline.md` ("Kernel and module ABI") |
 | Artifacts not in the control node's `artifacts/` | The fetch failed; inspect the fetch task. The builder keeps its `bin/` until the next build, so a re-run or a manual `scp` can recover it |
 | `--tags sshd` fails at "Prove a key-only login" | The chosen identity has no authorized key yet: set `host_iac_ssh_pubkey_file` (or root's) and run `make host-bootstrap`, or unset `sshd_hardening_enabled` |
 | Cannot reach a builder over SSH | Fix its `ansible_host` in `hosts.yml`; the connection identity comes from the committed `group_vars/all/main.yml` |
