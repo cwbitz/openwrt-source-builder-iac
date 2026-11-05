@@ -55,6 +55,19 @@ fi
 {% endfor %}
 [ "$dropped" -eq 0 ] || exit 1
 
+# defconfig also drops a requested package without a word when its definition is
+# missing from the scanned package tree, which is what an uninstalled feed looks
+# like. Fail here instead of shipping an image that lacks what the variant asked
+# for (no luci means no web UI, no uhttpd means nothing listens on port 80).
+missing=0
+{% for package in packages_final_list | default([]) | reject('match', '^-') %}
+grep -qx 'CONFIG_PACKAGE_{{ package }}=y' .config || {
+    printf 'ERROR: package dropped by defconfig: %s\n' '{{ package }}' >&2
+    missing=1
+}
+{% endfor %}
+[ "$missing" -eq 0 ] || exit 1
+
 cp -a .config /work/config.final
 
 log "make download"

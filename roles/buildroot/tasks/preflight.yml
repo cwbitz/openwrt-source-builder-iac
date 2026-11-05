@@ -84,6 +84,29 @@
       needs make (perl and git are needed there too). Install it in the Debian
       family with: sudo apt-get install -y make
 
+- name: Probe whether awk provides the gawk-only asort function
+  ansible.builtin.command:
+    argv:
+      - awk
+      - 'BEGIN { n = split("b a", v); asort(v); print v[1] }'
+  register: build_awk
+  changed_when: false
+  failed_when: false
+
+- name: Assert the build host's awk is gawk-compatible
+  ansible.builtin.assert:
+    that:
+      - build_awk.rc == 0
+      - build_awk.stdout | trim == 'a'
+    fail_msg: >-
+      awk on {{ inventory_hostname }} lacks gawk's asort(), which
+      include/scan.awk needs to build the feed indexes. With mawk the index is
+      empty, `scripts/feeds install` links no packages and exits successfully,
+      and `make defconfig` then drops every package from the luci/packages
+      feeds. Install gawk and make it the default awk:
+      sudo apt-get install -y gawk &&
+      sudo update-alternatives --set awk /usr/bin/gawk
+
 - name: Ensure the build cache root exists
   ansible.builtin.file:
     path: "{{ build_dir }}"

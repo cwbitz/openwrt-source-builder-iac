@@ -113,7 +113,8 @@ Task slices, individually selectable with `--tags`
 6. **build** — runs the pinned container (`download` → `world`, which also
    builds the images), then
    asserts the requested kernel options survived, the kernel config carries them,
-   `.BTF` exists when requested, and removed packages are absent from `.manifest`.
+   `.BTF` exists when requested, every requested package is still `=y` in
+   `.config`, and removed packages are absent from `.manifest`.
 7. **fetch** — copies only `bin/targets/...` to
    `artifacts/<artifact_id>/targets/...` (never the `bin/packages` tree).
    `artifact_id` is `<machine>-<variant>-sourcebuilder-<target>-<ref>-<digest>`, the
@@ -202,6 +203,11 @@ as `iac` and converges.
   starts from a fresh tree by design.
 - The `.manifest` package-compare is the parity check against the ImageBuilder
   variant; keep it in the runbook when changing the package logic.
+- `scripts/feeds update/install` runs on the host, and `include/scan.awk` needs
+  gawk's `asort()`: with mawk the feed index comes out empty, the install links
+  nothing and still exits 0, and `make defconfig` silently drops every package
+  from the luci/packages feeds. Preflight probes `awk` for it and setup asserts
+  the feeds landed in `package/feeds`.
 - `ansible.cfg` sets `vault_password_file`; ansible-core 2.19 hard-fails when it
   is missing, so CI generates a throwaway file before lint/syntax-check.
 

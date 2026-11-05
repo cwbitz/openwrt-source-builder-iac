@@ -14,7 +14,7 @@ Operational procedures for building OpenWrt firmware from source with
 | Build host | A separate LAN machine (by default) running Docker Engine; SSH-reachable as the connection user, who must access the Docker daemon |
 | sudo (or root) on the build host | Required on the first `make host-bootstrap` run to create the `iac` automation account |
 | Docker Engine / Desktop | Must be running on the `builders` host(s); the build toolchain itself lives in the pinned image |
-| GNU `make`, `perl`, `git` on the build host | `feeds update/install` runs outside the container, so the host needs these even though the compile does not |
+| GNU `make`, `perl`, `git` and a gawk-compatible `awk` on the build host | `feeds update/install` runs outside the container, so the host needs these even though the compile does not. `include/scan.awk` needs gawk's `asort()`; with mawk the feed index is empty and the install silently links nothing |
 | Disk | ~30 GB free on the volume holding `~/.cache/openwrt-builder` (the preflight floor is `source_min_free_gb`, default 25) |
 | RAM | The effective job count is `min(vCPU, RAM-GB / 2)` from the RAM the guest reports, so a ballooned VM can silently drop to one job; 8 GB is a practical minimum, and `source.jobs` pins the count |
 | python >= 3.8 | Control node; runs `ansible-core` and the `community.docker` modules |
@@ -251,6 +251,8 @@ host keeps its old login policy. The provider console remains the recovery path.
 | preflight: "Docker CLI not found" | Install Docker and ensure it is on PATH on the builder |
 | preflight: "Cannot reach the Docker daemon" | Start Docker; ensure the connection user can access the socket (the `iac` user joins the `docker` group when present) |
 | preflight: "Docker Python SDK" | Install `docker` for the build host's Python: `<python> -m pip install docker` |
+| "package dropped by defconfig: …" | A requested package is not in the scanned package tree: its feed is not installed (`ls <tree>/package/feeds`) or the name is wrong. Install the feeds, or drop the package |
+| "linked no packages for: …" | `scripts/feeds install -a` produced no links; almost always a mawk `awk` on the build host (empty feed index). Install gawk and make it the default `awk` |
 | "dropped by defconfig: CONFIG_…" | A requested kernel option cannot survive `defconfig` on this target (missing dependency/platform support). Remove it or fix the dependency; shipping without it is refused on purpose |
 | "CONFIG_… missing from …/linux-…/.config" | Same contract, checked again after the build; the kernel config did not carry the option |
 | "vmlinux carries no .BTF section" | BTF was requested but the toolchain/kernel did not produce it; check the build environment and the toolchain (dwarves/pahole) |
@@ -259,6 +261,7 @@ host keeps its old login policy. The provider console remains the recovery path.
 | "Duplicate overlay target files across modules" | Two active modules ship the same file path; rename or disable one |
 | A module does not run | The block is missing or empty; list at least one of its fields (a flag module needs `true`) |
 | `statistics` packages | The module adds `luci-app-statistics` + `collectd-mod-sensors`/`collectd-mod-irq` itself; entries in `packages` are removed/deduped |
+| Device boots and answers ping but the web UI is unreachable | The `.manifest` then has no `luci`/`uhttpd`: the luci/packages feeds were not installed into the package tree, so `make defconfig` dropped every package from them. Fix the feed indexes (see the gawk rows above) and rebuild |
 | WAN is not configured | The image intentionally leaves WAN (DHCP/PPPoE) unset; configure it after first boot |
 | Build hangs at "Building package index..." / fakeroot | The container `nofile` ulimit is unbounded and fakeroot's `faked` spins; the role pins `nofile:65536:65536`, keep it bounded |
 | Build is far slower than before | The cache key changed (ref, target or kernel options); a full rebuild is expected. Check `~/.cache/openwrt-builder/source` |
