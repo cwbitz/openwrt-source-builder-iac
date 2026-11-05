@@ -157,7 +157,12 @@ overwriting the previous build's artifacts.
 
 Only `bin/targets` is fetched (never the `bin/packages` tree), with the
 `targets/<target>/<subtarget>/` layout preserved: firmware images,
-`profiles.json`, `sha256sums`, `.manifest`, and so on. `source.json` records the
+`profiles.json`, `sha256sums`, `.manifest`, and so on. The image file names carry
+the version of the checked-out tree (`openwrt-<version>-<variant>-<target>-...`,
+for example `openwrt-25.12.6-ap-mediatek-filogic-glinet_gl-mt6000-squashfs-sysupgrade.bin`):
+the role enables `CONFIG_VERSIONOPT`/`CONFIG_VERSION_FILENAMES`, so the naming
+matches the release and ImageBuilder artifacts instead of dropping the version.
+`source.json` records the
 build image, repository, ref, resolved commit, target, profile, job count, kernel
 options, requested packages, feed commits and a SHA256 of the final config;
 `config` is the final `.config` itself. The builder-side `bin/` and work
