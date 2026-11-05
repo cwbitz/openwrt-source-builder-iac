@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.4](https://github.com/cwbitz/openwrt-source-builder-iac/compare/v0.1.3...v0.1.4) (2026-11-05)
+
+
+### Bug Fixes
+
+* **artifacts:** use the sourcebuilder backend marker in the artifact id ([#10](https://github.com/cwbitz/openwrt-source-builder-iac/issues/10)) ([05756d5](https://github.com/cwbitz/openwrt-source-builder-iac/commit/05756d5d1e23fa77f0e33ee05045f578812d3b01))
+
 ## [0.1.3](https://github.com/cwbitz/openwrt-source-builder-iac/compare/v0.1.2...v0.1.3) (2026-11-05)
 
 
