@@ -55,6 +55,23 @@ fi
 {% endfor %}
 [ "$dropped" -eq 0 ] || exit 1
 
+# `source.config` carries the non-kernel kconfig switches. A symbol kconfig does
+# not know (or whose dependency is unmet) is dropped silently there too, so
+# assert them the same way as the kernel options.
+dropped=0
+{% for option in source.config | default([]) %}
+{% if option.endswith('=n') %}
+if ! grep -qxF '# {{ option[:-2] }} is not set' .config; then
+    printf 'ERROR: dropped by defconfig: %s\n' '{{ option }}' >&2; dropped=1
+fi
+{% else %}
+if ! grep -qxF '{{ option }}' .config; then
+    printf 'ERROR: dropped by defconfig: %s\n' '{{ option }}' >&2; dropped=1
+fi
+{% endif %}
+{% endfor %}
+[ "$dropped" -eq 0 ] || exit 1
+
 # defconfig also drops a requested package without a word when its definition is
 # missing from the scanned package tree, which is what an uninstalled feed looks
 # like. Fail here instead of shipping an image that lacks what the variant asked

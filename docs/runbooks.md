@@ -251,6 +251,7 @@ host keeps its old login policy. The provider console remains the recovery path.
 | preflight: "Docker CLI not found" | Install Docker and ensure it is on PATH on the builder |
 | preflight: "Cannot reach the Docker daemon" | Start Docker; ensure the connection user can access the socket (the `iac` user joins the `docker` group when present) |
 | preflight: "Docker Python SDK" | Install `docker` for the build host's Python: `<python> -m pip install docker` |
+| LuCI loads but ignores `luci-i18n-*-zh-cn` in `packages` | Those kconfig symbols have no prompt, so `defconfig` writes them back as `# … is not set`. Select the language through `source.config` (`CONFIG_LUCI_LANG_zh_Hans=y`) instead |
 | "package dropped by defconfig: …" | A requested package is not in the scanned package tree: its feed is not installed (`ls <tree>/package/feeds`) or the name is wrong. Install the feeds, or drop the package |
 | "linked no packages for: …" | `scripts/feeds install -a` produced no links; almost always a mawk `awk` on the build host (empty feed index). Install gawk and make it the default `awk` |
 | "dropped by defconfig: CONFIG_…" | A requested kernel option cannot survive `defconfig` on this target (missing dependency/platform support). Remove it or fix the dependency; shipping without it is refused on purpose |

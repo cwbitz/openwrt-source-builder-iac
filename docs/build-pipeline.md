@@ -25,13 +25,14 @@ per variant and are individually selectable with `--tags`
    its cache directory, checks out the resolved commit, and updates/installs the
    feeds (see below).
 5. **config** — renders the `.config` fragment the project owns (target, device,
-   kernel options, packages/removals, download folder, ccache).
+   kernel options, kconfig switches, packages/removals, download folder, ccache).
 6. **overlay** — renders the enabled modules' uci-defaults, the `network` block
    and the variant's `custom_overlay`, and installs them as `<src>/files/`.
 7. **build** — runs the pinned build container (`defconfig` → `download` →
-   `world`), then asserts the requested kernel options survived, the kernel
-   config carries them, `.BTF` exists when requested, every requested package is
-   still `=y`, and removed packages are absent from `.manifest`.
+   `world`), then asserts the requested kernel options and kconfig switches
+   survived, the kernel config carries them, `.BTF` exists when requested, every
+   requested package is still `=y`, and removed packages are absent from
+   `.manifest`.
 8. **fetch** — copies `bin/targets/...` to the control node; the scratch work
    directory is removed when the role exits.
 9. **record** — writes `artifacts/<artifact_id>/build-info/{source.json,config}`.
@@ -67,7 +68,7 @@ to the target's own defaults:
 - `CONFIG_TARGET_<target>=y`, `CONFIG_TARGET_<target>_<subtarget>=y` and
   `CONFIG_TARGET_<target>_<subtarget>_DEVICE_<profile>=y`;
 - `CONFIG_DOWNLOAD_FOLDER="/build/dl"` and `CONFIG_CCACHE=y` (unless disabled);
-- the variant's `source.kernel` lines;
+- the variant's `source.kernel` and `source.config` lines;
 - one `CONFIG_PACKAGE_<name>=y` per package and
   `# CONFIG_PACKAGE_<name> is not set` for a `-name` removal entry.
 
@@ -119,12 +120,12 @@ build.
 
 1. optional `make clean` (`source.clean`; keeps `dl/` and `ccache/`);
 2. `make defconfig` with `TMPDIR` on disk and `CCACHE_DIR=/ccache`;
-3. **asserts every requested kernel option and package survived `defconfig`** —
-   the config is re-derived from the dependency graph, so a missing option fails
-   here instead of silently shipping a kernel without BTF/ftrace, and a package
-   whose definition is absent from the scanned tree (a feed that was not
-   installed) fails instead of shipping an image without it; the final config is
-   copied to `/work/config.final`;
+3. **asserts every requested kernel option, kconfig switch and package survived
+   `defconfig`** — the config is re-derived from the dependency graph, so a
+   missing option fails here instead of silently shipping a kernel without
+   BTF/ftrace, and a package whose definition is absent from the scanned tree (a
+   feed that was not installed) fails instead of shipping an image without it;
+   the final config is copied to `/work/config.final`;
 4. `make download`, then `make world` (toolchain, kernel, packages, and the
    images — `world` installs them, `make image` no longer exists on these refs;
    `world` is retried once because a parallel host-tool build can start before
@@ -180,8 +181,8 @@ Plain user-space packages are unaffected — the package architecture
 | `<repo>/artifacts/<artifact_id>/build-info/` | resolved commit, feeds, final `.config`, `source.json` |
 
 `<artifact_id>` is `<machine>-<variant>-sourcebuilder-<target>-<ref>-<digest>`, where the
-digest covers the variant's kernel options, packages, profile, rootfs size and
-image name — a changed variant therefore gets its own directory instead of
+digest covers the variant's kernel/config options, packages, profile, rootfs size
+and image name — a changed variant therefore gets its own directory instead of
 overwriting the previous build's artifacts.
 
 Only `bin/targets` is fetched (never the `bin/packages` tree), with the

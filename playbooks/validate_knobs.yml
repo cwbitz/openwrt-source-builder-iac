@@ -92,7 +92,7 @@
         unknown_keys: >-
           {{ src.keys() | difference(
                ['ref', 'target', 'profile', 'repo_url', 'update', 'jobs', 'clean',
-                'ccache', 'build_image', 'kernel']) | list }}
+                'ccache', 'build_image', 'kernel', 'config']) | list }}
       ansible.builtin.assert:
         that:
           - unknown_keys | length == 0
@@ -124,6 +124,12 @@
           - >-
             src.get('kernel', [])
             | reject('match', '^CONFIG_[A-Z0-9_]+=[ymn]$') | list | length == 0
+          - src.get('config', []) is sequence
+          - src.get('config', []) is not string
+          - src.get('config', []) | reject('string') | list | length == 0
+          - >-
+            src.get('config', [])
+            | reject('match', '^CONFIG_[A-Za-z0-9_]+=[ymn]$') | list | length == 0
         fail_msg: >-
           {{ inventory_hostname }}: variant {{ item.name | default('<unnamed>') }}
           has invalid source={{ item.source | default({}) | to_json }}

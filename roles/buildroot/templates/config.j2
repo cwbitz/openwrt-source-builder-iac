@@ -29,3 +29,10 @@ CONFIG_DOWNLOAD_FOLDER="/build/dl"
 CONFIG_PACKAGE_{{ package }}=y
 {% endif %}
 {% endfor %}
+# Variant kconfig switches that are not packages. Some symbols are invisible in
+# kconfig (no prompt) and can only be driven through such a switch — the LuCI
+# language selection, which enables the per-language translation packages, is
+# one. They are written verbatim and asserted after defconfig.
+{% for option in source.config | default([]) %}
+{{ option }}
+{% endfor %}

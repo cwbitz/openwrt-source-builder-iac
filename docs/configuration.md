@@ -76,6 +76,8 @@ source:
     - CONFIG_KERNEL_DEBUG_INFO=y
     - CONFIG_KERNEL_DEBUG_INFO_BTF=y
     - CONFIG_KERNEL_DEBUG_INFO_REDUCED=n
+  config:
+    - CONFIG_LUCI_LANG_zh_Hans=y
 ```
 
 | Key | Default | Meaning |
@@ -89,6 +91,7 @@ source:
 | `clean` | `false` | Run `make clean` before the build (keeps `dl/` and `ccache/`) |
 | `ccache` | `true` | Share the `ccache/` directory across builds; writes `CONFIG_DEVEL=y` + `CONFIG_CCACHE=y` + `CONFIG_CCACHE_DIR="/ccache"` (the symbol is only visible with the developer options) |
 | `kernel` | `[]` | Extra kernel options merged into `.config`; every entry must be `CONFIG_<NAME>=y\|m\|n` (`=n` is asserted as the `# … is not set` line kconfig writes back) |
+| `config` | `[]` | Non-kernel kconfig switches merged into `.config`, asserted the same way. Use it for symbols a package cannot select — the LuCI translations are invisible in kconfig and hang off the language switch (`CONFIG_LUCI_LANG_zh_Hans=y`), not a package name |
 
 ### The build environment and extra tooling
 
@@ -205,9 +208,13 @@ The `statistics` module owns its packages: it removes any `luci-app-statistics` 
 features. Listing them here is harmless.
 
 The base set is in `inventory/host_vars/example/main.yml` and can be copied per
-variant. The LuCI package-manager translation is explicit too:
-`luci-i18n-package-manager-zh-cn` on 24.10+ (APK), `luci-i18n-opkg-zh-cn` on older
-releases.
+variant.
+
+Translations are not a package entry: LuCI's per-language `luci-i18n-*` packages
+have no prompt in kconfig, so `CONFIG_PACKAGE_luci-i18n-base-zh-cn=y` is ignored
+and `defconfig` writes it back as `# … is not set`. Select the language with
+`source.config` instead (`CONFIG_LUCI_LANG_zh_Hans=y`); every translation whose
+parent package is in the image is then enabled by default.
 
 To resize a rootfs on the device, include `e2fsprogs` (`resize2fs`), `parted`, and
 `fdisk` in `packages`.
