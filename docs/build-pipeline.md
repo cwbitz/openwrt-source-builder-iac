@@ -142,6 +142,33 @@ An interrupted or failed `make build` cleans up after itself: the wrapper
 run's containers with their anonymous volumes (`docker rm -f -v`), and deletes
 the builder-side work scratch for every variant.
 
+## Kernel and module ABI
+
+A kmod package depends on the exact kernel build it was compiled against:
+`include/kernel.mk` adds
+`kernel (= <LINUX_VERSION>~<LINUX_VERMAGIC>-r<LINUX_RELEASE>)` to every
+`KernelPackage`, and `include/kernel-defaults.mk` derives `LINUX_VERMAGIC` as the
+MD5 of every `CONFIG_*=y|m` line in the kernel's effective configuration. The
+official feeds are published per hash
+(`targets/<target>/kmods/<version>-<release>-<hash>/`), so the hash is what
+decides whether a module from "outside" can be installed.
+
+That hash cannot match the release build for a source build: the release is built
+with the target's full module set, and every built module contributes its own
+`=m` line, so even a variant that leaves `source.kernel` empty has a different
+module set and therefore a different hash. The consequence:
+
+- the kmods in a source-built image are only usable on images from the same build;
+- `apk add kmod-…` against the official repository fails with
+  `unable to select packages: kernel-…: breaks: kmod-…[kernel=…]`;
+- to add a module to a source build, list it in the variant's `packages` so it is
+  compiled into the image (or serve the build's own `bin/targets/.../packages`);
+- the ImageBuilder variant is the reverse trade-off: it runs the official kernel,
+  so official kmods install unchanged.
+
+Plain user-space packages are unaffected — the package architecture
+(`aarch64_cortex-a53` and so on) still matches the release.
+
 ## Artifacts
 
 | Path | Where |
