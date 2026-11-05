@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.5](https://github.com/cwbitz/openwrt-source-builder-iac/compare/v0.1.4...v0.1.5) (2026-11-05)
+
+
+### Bug Fixes
+
+* **build:** fail when the feeds or a requested package go missing ([#12](https://github.com/cwbitz/openwrt-source-builder-iac/issues/12)) ([067416e](https://github.com/cwbitz/openwrt-source-builder-iac/commit/067416eb42d5b77709ec8866357b0c25b51b241d))
+
 ## [0.1.4](https://github.com/cwbitz/openwrt-source-builder-iac/compare/v0.1.3...v0.1.4) (2026-11-05)
 
 
