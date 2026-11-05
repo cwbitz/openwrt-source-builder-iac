@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.6](https://github.com/cwbitz/openwrt-source-builder-iac/compare/v0.1.5...v0.1.6) (2026-11-05)
+
+
+### Features
+
+* **source:** allow non-package kconfig switches per variant ([#14](https://github.com/cwbitz/openwrt-source-builder-iac/issues/14)) ([98835fe](https://github.com/cwbitz/openwrt-source-builder-iac/commit/98835fe8cb710f3fefbce582b6ed448f63022921))
+
 ## [0.1.5](https://github.com/cwbitz/openwrt-source-builder-iac/compare/v0.1.4...v0.1.5) (2026-11-05)
 
 
