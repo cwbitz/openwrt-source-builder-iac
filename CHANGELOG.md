@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/cwbitz/openwrt-source-builder-iac/compare/v0.1.1...v0.1.2) (2026-11-05)
+
+
+### Bug Fixes
+
+* **build:** enable IMAGEOPT so the version options are not dropped ([#5](https://github.com/cwbitz/openwrt-source-builder-iac/issues/5)) ([a96e86b](https://github.com/cwbitz/openwrt-source-builder-iac/commit/a96e86bde1a3a7227629e6fe0960d08e51baf27e))
+
 ## [0.1.1](https://github.com/cwbitz/openwrt-source-builder-iac/compare/v0.1.0...v0.1.1) (2026-11-05)
 
 
