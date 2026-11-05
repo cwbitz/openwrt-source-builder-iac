@@ -30,7 +30,7 @@ build_dir: "{{ ansible_facts.user_dir }}/.cache/openwrt-builder"
 # the pinned ref, so a directory stays self-describing even when two IaC
 # projects build the same machine with the same variant name.
 artifact_id: >-
-  {{ [build_id, 'source',
+  {{ [build_id, 'sourcebuilder',
       (source.target | default('unknown', true)) | replace('/', '-'),
       (source.ref | default('unknown', true)) | replace('/', '-'),
       (['kernel:' ~ (source.kernel | default([]) | sort | join(',')),
