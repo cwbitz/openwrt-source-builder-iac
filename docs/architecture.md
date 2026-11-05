@@ -149,7 +149,7 @@ uses the artifact id (see below):
 | `<repo>/artifacts/<artifact_id>/build-info/` | resolved commit, feeds, final `.config` |
 | `openwrt-src-<machine>-<variant>` | build container name |
 
-The **artifact id** — `<machine>-<variant>-source-<target>-<ref>` — names the
+The **artifact id** — `<machine>-<variant>-sourcebuilder-<target>-<ref>` — names the
 control-node copy, so the folder says which backend, target and pinned ref built it
 and stays distinguishable from another IaC project's output for the same machine
 and variant.

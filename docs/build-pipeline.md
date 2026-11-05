@@ -177,7 +177,7 @@ Plain user-space packages are unaffected — the package architecture
 | `<repo>/artifacts/<artifact_id>/targets/<target>/<subtarget>/` | control-node copy (gitignored) |
 | `<repo>/artifacts/<artifact_id>/build-info/` | resolved commit, feeds, final `.config`, `source.json` |
 
-`<artifact_id>` is `<machine>-<variant>-source-<target>-<ref>-<digest>`, where the
+`<artifact_id>` is `<machine>-<variant>-sourcebuilder-<target>-<ref>-<digest>`, where the
 digest covers the variant's kernel options, packages, profile, rootfs size and
 image name — a changed variant therefore gets its own directory instead of
 overwriting the previous build's artifacts.

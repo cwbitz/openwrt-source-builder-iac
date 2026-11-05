@@ -92,7 +92,7 @@ orchestration and overlay rendering.
 
 | Knob | Default | Effect |
 |------|---------|--------|
-| `artifacts_dir` | `<repo>/artifacts/<artifact_id>` | Control-node destination (always fetched); `<artifact_id>` = `<machine>-<variant>-source-<target>-<ref>-<digest>`, the digest covering the variant's kernel options, packages, profile, rootfs size and image name |
+| `artifacts_dir` | `<repo>/artifacts/<artifact_id>` | Control-node destination (always fetched); `<artifact_id>` = `<machine>-<variant>-sourcebuilder-<target>-<ref>-<digest>`, the digest covering the variant's kernel options, packages, profile, rootfs size and image name |
 | `source_bin_dir` | `~/.cache/openwrt-builder/source/<key>/bin` | Builder-side `bin/` staging, removed before the next build |
 
 Only `targets/<target>/<subtarget>/` is fetched (`bin/packages` is not); the

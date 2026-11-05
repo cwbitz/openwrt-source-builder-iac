@@ -49,7 +49,7 @@ make build                   # every variant, machines in parallel
 Artifacts land in `artifacts/<artifact_id>/targets/<target>/<subtarget>/` plus
 `artifacts/<artifact_id>/build-info/` (resolved commit, feeds commits, the final
 `.config`, and a hash of it), where `<artifact_id>` is
-`<machine>-<variant>-source-<target>-<ref>`.
+`<machine>-<variant>-sourcebuilder-<target>-<ref>`.
 
 ## Commands
 
