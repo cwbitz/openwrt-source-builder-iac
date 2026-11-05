@@ -4,6 +4,8 @@
 CONFIG_TARGET_{{ source.target.split('/')[0] }}=y
 CONFIG_TARGET_{{ source.target.split('/')[0] }}_{{ source.target.split('/')[1] }}=y
 CONFIG_TARGET_{{ source.target.split('/')[0] }}_{{ source.target.split('/')[1] }}_DEVICE_{{ target_profile }}=y
+CONFIG_VERSIONOPT=y
+CONFIG_VERSION_FILENAMES=y
 {% if rootfs_partsize %}
 CONFIG_TARGET_ROOTFS_PARTSIZE={{ rootfs_partsize }}
 {% endif %}
