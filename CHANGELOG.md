@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.2.0](https://github.com/cwbitz/openwrt-source-builder-iac/compare/v0.1.6...v0.2.0) (2026-11-06)
+
+
+### ⚠ BREAKING CHANGES
+
+* **make:** rename EXTRA to ANSIBLE_ARGS ([#16](https://github.com/cwbitz/openwrt-source-builder-iac/issues/16))
+
+### Code Refactoring
+
+* **make:** rename EXTRA to ANSIBLE_ARGS ([#16](https://github.com/cwbitz/openwrt-source-builder-iac/issues/16)) ([4df0bc4](https://github.com/cwbitz/openwrt-source-builder-iac/commit/4df0bc45e00b5bdc37a123bbf17e38a24b4acf6b))
+
 ## [0.1.6](https://github.com/cwbitz/openwrt-source-builder-iac/compare/v0.1.5...v0.1.6) (2026-11-05)
 
 
