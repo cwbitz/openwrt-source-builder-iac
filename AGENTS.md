@@ -13,7 +13,7 @@ lives in `roles/buildroot/`; the opt-in key-only SSH hardening lives in
 
 ## Commands
 
-- `make help` — aligned target list; overridable variables (`HOST`, `EXTRA`,
+- `make help` — aligned target list; overridable variables (`HOST`, `ANSIBLE_ARGS`,
   `PURGE`) are shown inline. `help` is listed last.
 - `make install` — the sole dependency entry point (toolchain, collections,
   `sshpass`, `passlib`, Keychain). Every other target depends on it.
@@ -29,7 +29,7 @@ lives in `roles/buildroot/`; the opt-in key-only SSH hardening lives in
 - `make deploy` — one-click: `host-bootstrap` then `build`.
 - `make build` / `make info` — build every variant (machines in parallel) / query
   the pinned ref and profile list; limit to one machine with
-  `EXTRA='--limit <machine>'`.
+  `ANSIBLE_ARGS='--limit <machine>'`.
 - `make cache-clean [PURGE=1]` — prune this project's caches on the builder
   (`work/` + `ccache/`; `PURGE=1` also drops `source/`, `dl/`, `image/`).
 - `make hostkey-init` — refresh every machine's SSH host key in the control
@@ -44,8 +44,8 @@ lives in `roles/buildroot/`; the opt-in key-only SSH hardening lives in
   unit suite) and the `ensure-*` / `agent-*` / `keychain-*` / `run-playbook`
   helpers. `make build` and `make lint` assert every operator knob against
   `inventory/knob_schema.yml` through `playbooks/validate_knobs.yml`.
-- `EXTRA` is appended to every `ansible-playbook` invocation, e.g.
-  `make build EXTRA='--limit builder-1'`.
+- `ANSIBLE_ARGS` is appended to every `ansible-playbook` invocation, e.g.
+  `make build ANSIBLE_ARGS='--limit builder-1'`.
 
 ## Variant schema
 

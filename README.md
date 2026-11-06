@@ -59,7 +59,7 @@ Artifacts land in `artifacts/<artifact_id>/targets/<target>/<subtarget>/` plus
 | `make install` | Sole dependency entry point (toolchain, collections, sshpass, passlib, Keychain) |
 | `make host-init HOST=… HOST_IP=…` | Scaffold `inventory/hosts.yml`, the group vars and `host_vars/<machine>/` |
 | `make host-bootstrap` | Probe `iac → admin → root` and create/repair the `iac` automation account |
-| `make build` | Build every variant (`EXTRA='--limit <machine>'` limits it) |
+| `make build` | Build every variant (`ANSIBLE_ARGS='--limit <machine>'` limits it) |
 | `make info` | Query the pinned ref, target and profile list without building |
 | `make deploy` | `host-bootstrap` then `build` |
 | `make cache-clean [PURGE=1]` | Prune this project's builder caches (work + ccache; `PURGE=1` drops source trees and `dl/`) |
