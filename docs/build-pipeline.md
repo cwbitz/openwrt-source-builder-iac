@@ -53,9 +53,12 @@ The cached tree is `~/.cache/openwrt-builder/source/<key>` with
   a whole-history fetch when the server will not serve the requested object;
 - resolves `FETCH_HEAD` and checks out that commit **detached**, so the tree is
   always exactly the pinned commit (the resolved commit is recorded);
+- renders `<tree>/feeds.conf` from the tree's `feeds.conf.default` plus the
+  variant's `source.feeds` lines, so an extra feed is pinned to the same commit on
+  every run;
 - runs `./scripts/feeds update -a` for a new tree, an explicitly requested
-  `source.update`, or a changed commit, then `./scripts/feeds install -a` and
-  records every feed's `HEAD`.
+  `source.update`, a changed commit, a changed feed list, or a missing feed
+  checkout, then `./scripts/feeds install -a` and records every feed's `HEAD`.
 
 `dl/`, `ccache/` and the Dockerfile context are shared across variants; the
 source tree is not shared across kernel configurations.
