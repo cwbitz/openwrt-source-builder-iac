@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/cwbitz/openwrt-source-builder-iac/compare/v0.2.1...v0.2.2) (2026-11-09)
+
+
+### Bug Fixes
+
+* **build:** verify requested packages in the image manifest ([#20](https://github.com/cwbitz/openwrt-source-builder-iac/issues/20)) ([ccd2204](https://github.com/cwbitz/openwrt-source-builder-iac/commit/ccd220496339fe973335b67edb002c6b11595dfe))
+
 ## [0.2.1](https://github.com/cwbitz/openwrt-source-builder-iac/compare/v0.2.0...v0.2.1) (2026-11-09)
 
 
