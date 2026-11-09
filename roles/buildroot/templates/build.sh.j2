@@ -159,5 +159,17 @@ else
     echo "WARNING: no .manifest produced; skipped the removed-package check" >&2
 fi
 
+log "verify the requested packages are present in the image"
+if [ -n "$manifest" ]; then
+{% for package in packages_final_list | default([]) | reject('match', '^-') %}
+    if ! awk -v p='{{ package }}' '$1 == p { found = 1 } END { exit !found }' "$manifest"; then
+        echo "ERROR: package missing from the image: {{ package }}" >&2
+        exit 1
+    fi
+{% endfor %}
+else
+    echo "WARNING: no .manifest produced; skipped the requested-package check" >&2
+fi
+
 log "artifacts"
 find bin/targets -maxdepth 3 -type f -printf '%10s  %p\n' | sort -k2
