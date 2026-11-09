@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/cwbitz/openwrt-source-builder-iac/compare/v0.2.0...v0.2.1) (2026-11-09)
+
+
+### Features
+
+* **source:** support extra package feeds ([#18](https://github.com/cwbitz/openwrt-source-builder-iac/issues/18)) ([43fb0f5](https://github.com/cwbitz/openwrt-source-builder-iac/commit/43fb0f57f4fdc041687cea016950ae804c9f699d))
+
 ## [0.2.0](https://github.com/cwbitz/openwrt-source-builder-iac/compare/v0.1.6...v0.2.0) (2026-11-06)
 
 
