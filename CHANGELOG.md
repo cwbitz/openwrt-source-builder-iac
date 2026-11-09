@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.3](https://github.com/cwbitz/openwrt-source-builder-iac/compare/v0.2.2...v0.2.3) (2026-11-09)
+
+
+### Bug Fixes
+
+* **build:** include curl in the build image ([#22](https://github.com/cwbitz/openwrt-source-builder-iac/issues/22)) ([f83e16b](https://github.com/cwbitz/openwrt-source-builder-iac/commit/f83e16b76461aa56ebf0a0336077aebd37d4d496))
+
 ## [0.2.2](https://github.com/cwbitz/openwrt-source-builder-iac/compare/v0.2.1...v0.2.2) (2026-11-09)
 
 
