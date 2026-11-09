@@ -26,6 +26,11 @@ build_variants:
       profile: "<profile>"
       # [OPTIONAL] upstream repository; use a mirror when git.openwrt.org is slow.
       repo_url: "https://git.openwrt.org/openwrt/openwrt.git"
+      # [OPTIONAL] extra feeds appended to the tree's feeds.conf, one feed line
+      # per entry (same syntax as feeds.conf.default). Pin the commit with ^<sha>
+      # for a reproducible build; the feed names and resolved commits are
+      # recorded in build-info/source.json.
+      feeds: []
       # [OPTIONAL] git fetch before building (off = reuse the cached tree).
       update: false
       # [OPTIONAL] parallel jobs; empty = min(nproc, RAM-GB / 2).

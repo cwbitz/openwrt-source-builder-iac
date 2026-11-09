@@ -9,6 +9,11 @@
       - (target_profile | default('', true) | string | trim | length) > 0
       - target_profile is not search('[<>]')
       - (source.kernel | default([]) | reject('string') | list | length) == 0
+      - (source.feeds | default([]) | reject('string') | list | length) == 0
+      - >-
+        source.feeds | default([])
+        | reject('match', '^(src-git|src-svn|src-cp|src-link) [A-Za-z0-9_.-]+ [^ ]+$')
+        | list | length == 0
     fail_msg: >-
       Variant '{{ build_id }}' needs source.ref, source.target
       (<target>/<subtarget>) and target_profile, with no example placeholder
@@ -22,6 +27,7 @@
     source_clean: "{{ source.clean | default(false) | bool }}"
     source_ccache: "{{ source.ccache | default(true) | bool }}"
     source_kernel: "{{ source.kernel | default([]) }}"
+    source_feed_lines: "{{ source.feeds | default([]) }}"
 
 - name: Check the Docker CLI is available on the build host
   ansible.builtin.command: docker --version
@@ -161,5 +167,6 @@
     msg:
       - "Variant {{ build_id }}: {{ build_image }}"
       - "Source {{ source_repo_url }} @ {{ source.ref }} -> {{ source.target }} ({{ target_profile }})"
+      - "Extra feeds {{ source_feed_lines | default([]) | join(', ') if source_feed_lines | default([]) | length > 0 else 'none' }}"
       - "Cache key {{ source_cache_key }} -> {{ source_dir }}"
       - "Jobs {{ source_jobs_effective }} ({{ ansible_facts.processor_vcpus }} vCPU, {{ ansible_facts.memtotal_mb }} MB RAM)"

@@ -158,7 +158,36 @@
   register: source_commit_info
   changed_when: false
 
-- name: Update the feeds (cloned tree or an explicit refresh)
+- name: Read the tree's default feed list
+  ansible.builtin.slurp:
+    src: "{{ source_dir }}/feeds.conf.default"
+  register: source_feeds_default
+
+- name: Render the tree's feed list
+  ansible.builtin.copy:
+    content: |
+      {{ (source_feeds_default.content | b64decode) | trim }}
+      {% for feed in source_feed_lines %}
+      {{ feed }}
+      {% endfor %}
+    dest: "{{ source_dir }}/feeds.conf"
+    mode: "0644"
+  register: source_feeds_conf
+
+- name: Check the extra feed checkouts
+  ansible.builtin.stat:
+    path: "{{ source_dir }}/feeds/{{ item.split(' ')[1] }}"
+  loop: "{{ source_feed_lines }}"
+  register: source_feed_dirs
+
+- name: Note whether an extra feed still needs to be cloned
+  ansible.builtin.set_fact:
+    source_feed_dirs_missing: >-
+      {{ source_feed_dirs.results | default([])
+         | map(attribute='stat') | map(attribute='exists')
+         | select('equalto', false) | list | length > 0 }}
+
+- name: Update the feeds (cloned tree, explicit refresh, changed commit or feed list)
   ansible.builtin.command:
     argv: [./scripts/feeds, update, -a]
     chdir: "{{ source_dir }}"
@@ -166,6 +195,8 @@
     (source_head_before.rc | default(1)) != 0
     or source_update
     or (source_head_before.stdout | trim) != (source_fetched_commit.stdout | trim)
+    or (source_feeds_conf is changed)
+    or (source_feed_dirs_missing | bool)
   changed_when: false
 
 - name: Install the feeds into the package tree

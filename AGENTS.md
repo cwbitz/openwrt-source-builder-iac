@@ -62,6 +62,7 @@ build_variants:
       target: mediatek/filogic      # [REQUIRED] <target>/<subtarget>
       profile: glinet_gl-mt6000     # [REQUIRED] profile of that target
       repo_url: https://git.openwrt.org/openwrt/openwrt.git
+      feeds: []                     # extra feed lines (pinned git URLs)
       update: false                 # git fetch before building
       jobs: ""                      # empty => min(nproc, RAM-GB / 2)
       clean: false                  # make clean (keeps dl/ and ccache/)
@@ -107,7 +108,9 @@ Task slices, individually selectable with `--tags`
 2. **modules / packages** — same semantics as the ImageBuilder project.
 3. **setup** — ensures the pinned build image (rebuilt when the Dockerfile
    changes), clones/fetches the tree into `~/.cache/openwrt-builder/source/<key>`,
-   `feeds update -a` (new tree or `source.update`) and `feeds install -a`.
+   renders `feeds.conf` from the tree's `feeds.conf.default` plus the variant's
+   `source.feeds`, `feeds update -a` (new tree, `source.update`, changed commit,
+   changed feed list or missing feed checkout) and `feeds install -a`.
 4. **config** — renders `.config` (target/subtarget/device, kernel options,
    packages and removals, `CONFIG_DOWNLOAD_FOLDER`, `CONFIG_CCACHE`).
 5. **overlay** — renders the module uci-defaults + `custom_overlay` and installs

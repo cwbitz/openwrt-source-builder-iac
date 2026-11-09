@@ -253,6 +253,8 @@ host keeps its old login policy. The provider console remains the recovery path.
 | preflight: "Docker Python SDK" | Install `docker` for the build host's Python: `<python> -m pip install docker` |
 | LuCI loads but ignores `luci-i18n-*-zh-cn` in `packages` | Those kconfig symbols have no prompt, so `defconfig` writes them back as `# … is not set`. Select the language through `source.config` (`CONFIG_LUCI_LANG_zh_Hans=y`) instead |
 | "package dropped by defconfig: …" | A requested package is not in the scanned package tree: its feed is not installed (`ls <tree>/package/feeds`) or the name is wrong. Install the feeds, or drop the package |
+| A package from `source.feeds` is missing | Check the feed line and its pinned commit in `<tree>/feeds.conf`; a malformed line or an unfetchable commit leaves the package undefined. `build-info/source.json` records the declared `feed_lines` and the resolved `feeds` commits |
+| `linker 'ccache <compiler>' not found` building Suricata | The feed's Rust recipe passes `$(CC)` to Cargo as the linker, so with ccache the value is a wrapper command Cargo cannot execute. Set `source.ccache: false` for that variant; ccache affects only build speed, not the image |
 | "linked no packages for: …" | `scripts/feeds install -a` produced no links; almost always a mawk `awk` on the build host (empty feed index). Install gawk and make it the default `awk` |
 | "dropped by defconfig: CONFIG_…" | A requested kernel option cannot survive `defconfig` on this target (missing dependency/platform support). Remove it or fix the dependency; shipping without it is refused on purpose |
 | "CONFIG_… missing from …/linux-…/.config" | Same contract, checked again after the build; the kernel config did not carry the option |

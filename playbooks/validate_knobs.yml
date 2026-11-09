@@ -92,7 +92,7 @@
         unknown_keys: >-
           {{ src.keys() | difference(
                ['ref', 'target', 'profile', 'repo_url', 'update', 'jobs', 'clean',
-                'ccache', 'build_image', 'kernel', 'config']) | list }}
+                'ccache', 'build_image', 'feeds', 'kernel', 'config']) | list }}
       ansible.builtin.assert:
         that:
           - unknown_keys | length == 0
@@ -124,6 +124,13 @@
           - >-
             src.get('kernel', [])
             | reject('match', '^CONFIG_[A-Z0-9_]+=[ymn]$') | list | length == 0
+          - src.get('feeds', []) is sequence
+          - src.get('feeds', []) is not string
+          - src.get('feeds', []) | reject('string') | list | length == 0
+          - >-
+            src.get('feeds', [])
+            | reject('match', '^(src-git|src-svn|src-cp|src-link) [A-Za-z0-9_.-]+ [^ ]+$')
+            | list | length == 0
           - src.get('config', []) is sequence
           - src.get('config', []) is not string
           - src.get('config', []) | reject('string') | list | length == 0

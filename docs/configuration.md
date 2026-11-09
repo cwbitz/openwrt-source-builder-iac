@@ -68,6 +68,7 @@ source:
   target: mediatek/filogic
   profile: glinet_gl-mt6000
   repo_url: https://git.openwrt.org/openwrt/openwrt.git
+  feeds: []
   update: false
   jobs: ""
   clean: false
@@ -86,12 +87,38 @@ source:
 | `target` | — | **[REQUIRED]** `<target>/<subtarget>`, e.g. `mediatek/filogic`, `x86/64` |
 | `profile` | — | **[REQUIRED]** device profile of that target, e.g. `glinet_gl-mt6000`, `generic` |
 | `repo_url` | `https://git.openwrt.org/openwrt/openwrt.git` | Upstream (or mirror) repository |
+| `feeds` | `[]` | Extra feed lines appended to the tree's `feeds.conf` (one line per entry, same syntax as `feeds.conf.default`); pin the commit with `^<sha>` |
 | `update` | `false` | Run `feeds update -a` before building; the tree still fetches the ref |
 | `jobs` | `""` | Parallel make jobs; empty ⇒ `min(vCPU, RAM-GB / 2)` from the RAM the guest reports — a ballooned VM shrinks it, so pin it on a build host |
 | `clean` | `false` | Run `make clean` before the build (keeps `dl/` and `ccache/`) |
 | `ccache` | `true` | Share the `ccache/` directory across builds; writes `CONFIG_DEVEL=y` + `CONFIG_CCACHE=y` + `CONFIG_CCACHE_DIR="/ccache"` (the symbol is only visible with the developer options) |
 | `kernel` | `[]` | Extra kernel options merged into `.config`; every entry must be `CONFIG_<NAME>=y\|m\|n` (`=n` is asserted as the `# … is not set` line kconfig writes back) |
 | `config` | `[]` | Non-kernel kconfig switches merged into `.config`, asserted the same way. Use it for symbols a package cannot select — the LuCI translations are invisible in kconfig and hang off the language switch (`CONFIG_LUCI_LANG_zh_Hans=y`), not a package name |
+
+### Extra feeds
+
+A package that lives outside the tree's default feeds (for example the Suricata
+package) needs its feed declared in `source.feeds`:
+
+```yaml
+source:
+  feeds:
+    - "src-git example https://example.com/openwrt-feed.git^<commit>"
+```
+
+The role renders `feeds.conf` from the checked-out tree's `feeds.conf.default`
+plus these lines, so the base feeds stay unchanged and the extra feed is pinned
+to the same commit on every run. Use the regular `feeds.conf` syntax (`src-git`,
+`src-svn`, `src-cp`, `src-link`); pin a git feed with `^<commit>`. The feed's
+packages then behave like any other package: list them in `packages` and the
+build asserts they survive `defconfig` and appear in the image's `.manifest`.
+`build-info/source.json` records both the declared feed lines and the resolved
+feed commits.
+
+A source tree is cached per `(target, ref, kernel options)`, not per feed set, so
+a tree that has already been used with another feed set keeps any feed checkouts
+that are no longer declared. That is harmless (only the packages listed in
+`packages` are enabled), and `make cache-clean PURGE=1` removes the tree.
 
 ### The build environment and extra tooling
 

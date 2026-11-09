@@ -35,6 +35,7 @@ artifact_id: >-
       (source.ref | default('unknown', true)) | replace('/', '-'),
       (['kernel:' ~ (source.kernel | default([]) | sort | join(',')),
         'config:' ~ (source.config | default([]) | sort | join(',')),
+        'feeds:' ~ (source_feed_lines | default([]) | sort | join(',')),
         'packages:' ~ (packages | default([]) | sort | join(',')),
         'profile:' ~ (target_profile | default('')),
         'rootfs:' ~ (rootfs_partsize | default('')),
