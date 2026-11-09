@@ -139,8 +139,9 @@ build.
    as the kernel-module list, `ROOTFS_PARTSIZE=` would override the byte value
    `image.mk` derives);
 5. verifies the kernel configuration carries each requested option, that
-   `vmlinux` has a `.BTF` section when BTF was requested, and that every removed
-   package is absent from the target's `.manifest`;
+   `vmlinux` has a `.BTF` section when BTF was requested, that every requested
+   package is present in the target's `.manifest`, and that every removed package
+   is absent from it;
 6. lists the produced artifacts.
 
 An interrupted or failed `make build` cleans up after itself: the wrapper
