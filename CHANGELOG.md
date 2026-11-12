@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.4](https://github.com/cwbitz/openwrt-source-builder-iac/compare/v0.2.3...v0.2.4) (2026-11-12)
+
+
+### Bug Fixes
+
+* **vault:** refuse a vault edit that would drop newly written secrets ([#24](https://github.com/cwbitz/openwrt-source-builder-iac/issues/24)) ([2dc757c](https://github.com/cwbitz/openwrt-source-builder-iac/commit/2dc757cc9648dde44a97fd1e4bff6e8f600f2e3a))
+
 ## [0.2.3](https://github.com/cwbitz/openwrt-source-builder-iac/compare/v0.2.2...v0.2.3) (2026-11-09)
 
 
