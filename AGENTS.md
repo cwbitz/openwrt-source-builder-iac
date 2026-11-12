@@ -35,9 +35,10 @@ lives in `roles/buildroot/`; the opt-in key-only SSH hardening lives in
 - `make hostkey-init` — refresh every machine's SSH host key in the control
   node's `known_hosts` (drop the stale entry, re-add).
 - `make vault-init` / `vault-edit HOST=<machine>` / `vault-view [HOST=<machine>]`
-  — the per-machine connection vault; plaintext is encrypted first and the keys
-  are re-sorted alphabetically after editing. With a single machine `HOST` is
-  implied; `VAULT_FILE=<path>` overrides the path.
+  — the per-machine connection vault; plaintext is encrypted first, the keys are
+  re-sorted alphabetically after editing, and a save is refused when the vault
+  changed while the editor was open (the edited text is kept for a merge). With a
+  single machine `HOST` is implied; `VAULT_FILE=<path>` overrides the path.
 - Internal (hidden from `make help`): `lint` (syntax-check + `ansible-lint` +
   `yamllint` + `shellcheck` + the operator-example audit + the knob validation +
   `scripts/check_repo_privacy.py` + `gitleaks`; run by CI), `make test` (helper
