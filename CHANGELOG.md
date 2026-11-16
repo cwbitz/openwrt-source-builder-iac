@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.5](https://github.com/cwbitz/openwrt-source-builder-iac/compare/v0.2.4...v0.2.5) (2026-11-16)
+
+
+### Bug Fixes
+
+* **build:** disable the binary repository of source-only feeds ([#26](https://github.com/cwbitz/openwrt-source-builder-iac/issues/26)) ([89096bb](https://github.com/cwbitz/openwrt-source-builder-iac/commit/89096bb683190111de494dc2ef7107d32b6be643))
+
 ## [0.2.4](https://github.com/cwbitz/openwrt-source-builder-iac/compare/v0.2.3...v0.2.4) (2026-11-12)
 
 
