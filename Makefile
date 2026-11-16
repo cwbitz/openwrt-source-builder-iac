@@ -23,6 +23,7 @@ QUIET ?=
 say = $(if $(QUIET),:,echo)
 
 REFRESH ?=
+REBUILD ?=
 KNOWN_HOSTS ?= $(HOME)/.ssh/known_hosts
 
 VAULT_PASSWORD_HINT := ERROR: Ansible Vault cannot decrypt this file - the password in $(ANSIBLE_VAULT_PASSWORD_FILE) is missing or incorrect. Restore the original password, or re-encrypt the vault file with the current one.
@@ -103,7 +104,7 @@ host-init: vault-init ## Scaffold inventory + host_vars/<HOST> from the examples
 	@python3 $(CURDIR)/scripts/ensure_inventory_host.py $(INV) "$(HOST)" --group builders --ansible-host "$(HOST_IP)" $(if $(FORCE),--force)
 	@echo "scaffolded inventory/host_vars/$(HOST)/ (machine registered under the builders group; edit build_variants[] in main.yml, then: make vault-edit HOST=$(HOST))"
 
-host-bootstrap: hostkey-init ## Create the iac automation account (bootstrap.yml; ANSIBLE_ARGS=<extra ansible args>; REFRESH=1 refreshes host keys first)
+host-bootstrap: rebuild-reset hostkey-init ## Create the iac automation account (bootstrap.yml; ANSIBLE_ARGS=<extra ansible args>; REFRESH=1 refreshes host keys first; REBUILD=1 after a host rebuild)
 	@test -f $(INV) || { \
 		echo "ERROR: $(INV) not found — copy $(INV).example and fill it in."; exit 1; }
 	@$(MAKE) --no-print-directory run-playbook PLAYBOOK=playbooks/bootstrap.yml
@@ -193,7 +194,15 @@ lint: install vault-init validate-knobs
 	python3 scripts/check_script_modes.py
 	gitleaks dir . --config .gitleaks.toml --no-banner --redact
 
-hostkey-init: vault-init ## Refresh every managed host's SSH host key in known_hosts (FORCE=1 replaces a changed key)
+.PHONY: rebuild-reset
+rebuild-reset:
+	@if [ -n "$(REBUILD)" ]; then \
+		echo "REBUILD=1: a changed host key will be accepted, cached facts and generated state are dropped"; \
+		echo "           delete host-returned secrets from vault.yml (tokens, setup keys) before the first run"; \
+		rm -rf .cache/facts; \
+	fi
+
+hostkey-init: vault-init ## Refresh every managed host's SSH host key in known_hosts (FORCE=1 or REBUILD=1 replaces a changed key)
 	@set -e; \
 	nh="$(KNOWN_HOSTS)"; mkdir -p "$$(dirname "$$nh")"; tmp=$$(mktemp); targets=$$(mktemp); tsv=$$(mktemp); pub=$$(mktemp); failures=0; \
 	trap 'rm -f "$$tmp" "$$targets" "$$tsv" "$$pub"' EXIT; \
@@ -213,8 +222,11 @@ hostkey-init: vault-init ## Refresh every managed host's SSH host key in known_h
 		new=$$(printf '%s\n' "$$keys" | awk '{print $$2" "$$3}' | sort); \
 	printf '%s\n' "$$keys" | awk '{print $$2" "$$3}' > "$$pub"; \
 	ssh-keygen -lf "$$pub" 2>/dev/null | sed 's/^/  fingerprint: /' >&2 || true; \
-		if [ -n "$$old" ] && [ -n "$$(comm -23 <(printf '%s\n' "$$old") <(printf '%s\n' "$$new"))" ] && [ "$(FORCE)" != "1" ]; then \
-			echo "ERROR: host key changed for $$key; verify the fingerprint, then re-run with FORCE=1" >&2; failures=1; continue; \
+		if [ -n "$$old" ] && [ -n "$$(comm -23 <(printf '%s\n' "$$old") <(printf '%s\n' "$$new"))" ]; then \
+			if [ "$(FORCE)" != "1" ] && [ "$(REBUILD)" != "1" ]; then \
+				echo "ERROR: host key changed for $$key; verify the fingerprint, then re-run with FORCE=1 (or REBUILD=1 after a host rebuild)" >&2; failures=1; continue; \
+			fi; \
+			echo "  changed: replacing the recorded key" >&2; \
 		fi; \
 		ssh-keygen -R "$$key" -f "$$tmp" >/dev/null 2>&1 || true; \
 		printf '%s\n' "$$keys" >> "$$tmp"; \
@@ -249,7 +261,7 @@ build: validate-knobs ## Build a customized OpenWrt firmware image from source (
 		echo "ERROR: $(INV) not found — copy $(INV).example and fill it in."; exit 1; }
 	@$(MAKE) --no-print-directory run-build-playbook
 
-deploy: host-bootstrap build ## One-click: bootstrap the build host, then build every variant (ANSIBLE_ARGS=<extra ansible args>; REFRESH=1 refreshes host keys first)
+deploy: host-bootstrap build ## One-click: bootstrap the build host, then build every variant (ANSIBLE_ARGS=<extra ansible args>; REFRESH=1 refreshes host keys first; REBUILD=1 after a host rebuild)
 
 # This project owns only its own caches; never touch another project's tree.
 cache-clean: vault-init agent-fallback ## Prune this project's builder caches (work + ccache; PURGE=1 also drops source trees and dl)
