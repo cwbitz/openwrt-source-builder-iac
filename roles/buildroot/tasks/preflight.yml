@@ -28,6 +28,13 @@
     source_ccache: "{{ source.ccache | default(true) | bool }}"
     source_kernel: "{{ source.kernel | default([]) }}"
     source_feed_lines: "{{ source.feeds | default([]) }}"
+    source_feed_config_lines: >-
+      {{ source.feeds | default([])
+         | map('regex_replace', '^\S+\s+(\S+).*$', 'CONFIG_FEED_\1')
+         | reject('in', (source.config | default([])
+                         | map('regex_replace', '^([^=]+)=.*$', '\1') | list))
+         | map('regex_replace', '$', '=m')
+         | list }}
 
 - name: Check the Docker CLI is available on the build host
   ansible.builtin.command: docker --version

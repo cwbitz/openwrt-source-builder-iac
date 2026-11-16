@@ -59,7 +59,7 @@ fi
 # not know (or whose dependency is unmet) is dropped silently there too, so
 # assert them the same way as the kernel options.
 dropped=0
-{% for option in source.config | default([]) %}
+{% for option in (source.config | default([])) + (source_feed_config_lines | default([])) %}
 {% if option.endswith('=n') %}
 if ! grep -qxF '# {{ option[:-2] }} is not set' .config; then
     printf 'ERROR: dropped by defconfig: %s\n' '{{ option }}' >&2; dropped=1

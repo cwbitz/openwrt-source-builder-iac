@@ -33,6 +33,6 @@ CONFIG_PACKAGE_{{ package }}=y
 # kconfig (no prompt) and can only be driven through such a switch — the LuCI
 # language selection, which enables the per-language translation packages, is
 # one. They are written verbatim and asserted after defconfig.
-{% for option in source.config | default([]) %}
+{% for option in (source.config | default([])) + (source_feed_config_lines | default([])) %}
 {{ option }}
 {% endfor %}
