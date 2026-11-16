@@ -115,6 +115,22 @@ build asserts they survive `defconfig` and appear in the image's `.manifest`.
 `build-info/source.json` records both the declared feed lines and the resolved
 feed commits.
 
+An extra feed is a source feed: its packages are compiled into the image, but
+there is no binary repository for it on `downloads.openwrt.org`.
+`include/feeds.mk` still writes a `<feed>/packages.adb` line for every enabled
+`CONFIG_FEED_<name>`, which then 404s on first `apk update`. The role therefore
+writes `CONFIG_FEED_<name>=m` into `.config` for every `source.feeds` entry, so
+the generated line is commented out. The packages are still built and installed;
+only the unusable repository line is disabled. The build asserts the generated
+switch survives `defconfig`, so a feed cannot silently ship a broken repository
+again.
+
+Do not add a `CONFIG_FEED_<name>` entry for a declared feed to `source.config`:
+the role already derives it. If one is present, the explicit value wins and the
+derived `=m` is skipped, which keeps a deliberate override working without a
+duplicate `.config` line. Keep `=m` for a source-only feed; use `=y` only when
+that feed publishes a matching binary repository.
+
 A source tree is cached per `(target, ref, kernel options)`, not per feed set, so
 a tree that has already been used with another feed set keeps any feed checkouts
 that are no longer declared. That is harmless (only the packages listed in
