@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.6](https://github.com/cwbitz/openwrt-source-builder-iac/compare/v0.2.5...v0.2.6) (2026-11-16)
+
+
+### Features
+
+* **make:** add a rebuilt-host reset switch ([#29](https://github.com/cwbitz/openwrt-source-builder-iac/issues/29)) ([99279d8](https://github.com/cwbitz/openwrt-source-builder-iac/commit/99279d83ed827b33e971602d83176f0a134344f7))
+
 ## [0.2.5](https://github.com/cwbitz/openwrt-source-builder-iac/compare/v0.2.4...v0.2.5) (2026-11-16)
 
 
