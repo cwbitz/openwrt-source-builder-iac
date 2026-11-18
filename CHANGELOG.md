@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.7](https://github.com/cwbitz/openwrt-source-builder-iac/compare/v0.2.6...v0.2.7) (2026-11-18)
+
+
+### Features
+
+* **make:** select machines and task slices with HOST and TAGS ([#31](https://github.com/cwbitz/openwrt-source-builder-iac/issues/31)) ([42b64d3](https://github.com/cwbitz/openwrt-source-builder-iac/commit/42b64d369b842d0f0cbaae5e3789ab6945fc0b28))
+
 ## [0.2.6](https://github.com/cwbitz/openwrt-source-builder-iac/compare/v0.2.5...v0.2.6) (2026-11-16)
 
 
