@@ -1,5 +1,5 @@
 ---
-# Static inventory: the build machine(s); `make host-init` creates it.
+# Static inventory: the build machine(s); `make prep` creates it.
 #
 # One inventory host = ONE physical build machine. A machine builds one or more
 # VARIANTS (source ref/target/profile/settings), declared in
@@ -8,14 +8,14 @@
 # separate machines build in parallel.
 #
 # Do NOT set ansible_user here: the connection identity comes from
-# group_vars/all/main.yml. Run `make host-bootstrap` once per machine first.
+# group_vars/all/main.yml. Run `make bootstrap-accounts` once per machine first.
 #
 # The same machine may also be managed by openwrt-image-builder-iac; this project
 # only ever writes below ~/.cache/openwrt-builder (source trees, dl, ccache,
 # work) and the control-node artifacts/ tree.
 builders:
   hosts:
-    # `make host-init HOST=<machine> HOST_IP=<addr>` adds the entry (HOST is
-    # required; HOST_IP falls back to a placeholder address). Example entry:
+    # `make prep HOST=<machine> IP=<addr>` adds the entry (HOST is
+    # required; IP falls back to a placeholder address). Example entry:
     #   builder-1:
     #     ansible_host: 203.0.113.50

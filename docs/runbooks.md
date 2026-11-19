@@ -12,7 +12,7 @@ Operational procedures for building OpenWrt firmware from source with
 |-------------|-------|
 | Control node | Where you run `make`; hosts the repo and the Ansible toolchain |
 | Build host | A separate LAN machine (by default) running Docker Engine; SSH-reachable as the connection user, who must access the Docker daemon |
-| sudo (or root) on the build host | Required on the first `make host-bootstrap` run to create the `iac` automation account |
+| sudo (or root) on the build host | Required on the first `make bootstrap-accounts` run to create the `iac` automation account |
 | Docker Engine / Desktop | Must be running on the `builders` host(s); the build toolchain itself lives in the pinned image |
 | GNU `make`, `perl`, `git` and a gawk-compatible `awk` on the build host | `feeds update/install` runs outside the container, so the host needs these even though the compile does not. `include/scan.awk` needs gawk's `asort()`; with mawk the feed index is empty and the install silently links nothing |
 | Disk | ~30 GB free on the volume holding `~/.cache/openwrt-builder` (the preflight floor is `source_min_free_gb`, default 25) |
@@ -21,10 +21,10 @@ Operational procedures for building OpenWrt firmware from source with
 | `ansible-core` + `python` | Pinned in `.tool-versions` (`mise install` / `asdf install`) |
 | `community.docker` | Installed into `collections/` by `make install` |
 | `openssl` | Control node; generates secret values (`make install`) |
-| `sshpass` | Control node; password SSH during `make host-bootstrap` (`make install`) |
+| `sshpass` | Control node; password SSH during `make bootstrap-accounts` (`make install`) |
 | `passlib` | Control node; `password_hash` for the automation user (`make install`) |
 | Keychain 3 | Control node; **fallback** ssh-agent, ensured by `make install` |
-| vault password | Created once by `make vault-init`; required to store/read generated secrets |
+| vault password | Created automatically by the first target that needs it; required to store/read generated secrets |
 | docker Python SDK | On the **build host** (not the control node); checked by the role preflight |
 
 `make install` is the sole dependency entry point and is idempotent; see
@@ -38,14 +38,13 @@ mise install
 # Extra tools in the build image: see docs/configuration.md ("The build environment
 # and extra tooling"): per variant `source.build_image` plus an optional
 # inventory/custom/build-image/Dockerfile.
-make host-init HOST=builder-1 HOST_IP=203.0.113.50   # scaffolds group_vars + host_vars/<machine>/
+make prep HOST=builder-1 IP=203.0.113.50   # scaffolds group_vars + host_vars/<machine>/
 # edit inventory/host_vars/builder-1/main.yml: source.ref/target/profile,
 # kernel options, packages and settings
-make host-init HOST=openwrt-src-prod-2 HOST_IP=203.0.113.51   # repeat for each machine
+make prep HOST=openwrt-src-prod-2 IP=203.0.113.51   # repeat for each machine
 make install
-make vault-init
-make vault-edit HOST=builder-1      # per-machine SSH identity vault
-make host-bootstrap                       # once; probe iac -> admin -> root
+make edit HOST=builder-1      # per-machine SSH identity vault
+make bootstrap-accounts       # once; probe iac -> admin -> root
 # or, to bootstrap and then build everything in one shot:
 make deploy
 ```
@@ -56,13 +55,13 @@ Configuration is split by scope (machine-wide vs per-machine); see
 gitignored; the committed `group_vars/all/main.yml` baseline and `*.example`
 templates are tracked.
 
-`host-init` copies the example verbatim, including the `<release-tag-or-commit>`,
+`make prep` copies the example verbatim, including the `<release-tag-or-commit>`,
 `<target>/<subtarget>` and `<profile>` placeholders; validation refuses to build
 until they are replaced.
 
-### `host-bootstrap`
+### `bootstrap-accounts`
 
-`make host-bootstrap` probes `iac → admin → root` on **every**
+`make bootstrap-accounts` probes `iac → admin → root` on **every**
 machine (or only `HOST=<machine>`) and uses the first identity that
 works on each; when that is not `iac`, it
 (re)creates the `iac` automation account (key-first, NOPASSWD sudo, the `docker`
@@ -77,7 +76,7 @@ See [architecture](architecture.md) for the full model.
 ```bash
 make build                            # build every variant (machines in parallel)
 make build HOST=builder-1  # single machine
-make deploy                           # host-bootstrap, then build (fresh host to image)
+make deploy                           # bootstrap-accounts, then build (fresh host to image)
 ```
 
 `make build` targets `hosts: builders`; the role loops each machine's
@@ -127,8 +126,8 @@ not match the image. Package the modules you need at build time.
 
 | Target | Effect |
 |--------|--------|
-| `make cache-clean` | Removes `work/` and `ccache/` on the builder |
-| `make cache-clean PURGE=1` | Also removes `source/`, `dl/`, `image/` — the next build is full again |
+| `make prune` | Removes `work/` and `ccache/` on the builder |
+| `make prune PURGE=1` | Also removes `source/`, `dl/`, `image/` — the next build is full again |
 
 The source tree is keyed by `(target, ref, kernel options)`; changing a kernel
 option is a deliberate cache miss. `dl/` and `ccache/` are shared across variants
@@ -165,7 +164,7 @@ options without building. It lists the target's profiles from the **cached**
 source tree, so on a fresh machine run `make build` once (or inspect
 `target/linux/<target>/<subtarget>/profiles` in a checkout) before choosing
 `source.profile`; when no tree is cached it says so explicitly. The dependency
-helper chatter is silenced (`QUIET=1`) and the result is printed per variant.
+helper chatter is suppressed and the result is printed per variant.
 
 ## 5. Reproducibility
 
@@ -189,8 +188,8 @@ helper chatter is silenced (`QUIET=1`) and the result is printed per variant.
   does end up in the artifact.
 - **Connection credentials** are per machine (`inventory/host_vars/<machine>/vault.yml`).
 - The vault password file lives outside the repo and is never committed;
-  `make vault-edit` encrypts a plaintext vault before editing.
-- Vault keys are kept in alphabetical order: `make vault-edit` re-sorts
+  `make edit` encrypts a plaintext vault before editing.
+- Vault keys are kept in alphabetical order: `make edit` re-sorts
   the top-level keys after the editor closes (comment-preserving) and re-encrypts
   only when the order changed. Hand edits should stay alphabetical too. A save is
   refused when the vault changed while the editor was open, so a secret a deploy
@@ -242,12 +241,12 @@ host keeps its old login policy. The provider console remains the recovery path.
 
 | Symptom | Cause / fix |
 |---------|-------------|
-| `host-bootstrap`: "no working identity" | Configure the connection passwords in the machine's vault and/or the key paths in `group_vars/builders/main.yml`, or load a key into the SSH agent. If only `root` works, set the root password (or a root private key) |
-| `build`/`info` cannot connect as `iac` | Run `make host-bootstrap` once; the effective password is `vault_host_iac_password` (generated when empty), else set `host_iac_ssh_privkey_file`/pubkey |
-| Need the auto-generated password | `make vault-view` |
-| `build` fails: vault password file missing | Run `make vault-init` |
-| `host-bootstrap` user tasks fail (sudo/become) | The probed identity needs sudo or root; the first run must reach the host as `root` or a sudo-capable `admin` |
-| "needs source.ref, source.target … and source.profile" | Replace the example placeholders; `make host-init` copies them verbatim |
+| `bootstrap-accounts`: "no working identity" | Configure the connection passwords in the machine's vault and/or the key paths in `group_vars/builders/main.yml`, or load a key into the SSH agent. If only `root` works, set the root password (or a root private key) |
+| `build`/`info` cannot connect as `iac` | Run `make bootstrap-accounts` once; the effective password is `vault_host_iac_password` (generated when empty), else set `host_iac_ssh_privkey_file`/pubkey |
+| Need the auto-generated password | `make view` |
+| `build` fails: vault password file missing | Run any target that needs it, e.g. `make prep HOST=<machine>` |
+| `bootstrap-accounts` user tasks fail (sudo/become) | The probed identity needs sudo or root; the first run must reach the host as `root` or a sudo-capable `admin` |
+| "needs source.ref, source.target … and source.profile" | Replace the example placeholders; `make prep` copies them verbatim |
 | "cannot fetch '<ref>'" | Check the tag/branch/commit and network access; for a slow `git.openwrt.org`, set `source.repo_url` to a mirror |
 | preflight: "only N GB free" | Free space on the volume holding `~/.cache/openwrt-builder`, or lower `source_min_free_gb` if you know the host has room elsewhere |
 | preflight: "Docker CLI not found" | Install Docker and ensure it is on PATH on the builder |
@@ -272,10 +271,10 @@ host keeps its old login policy. The provider console remains the recovery path.
 | Build hangs at "Building package index..." / fakeroot | The container `nofile` ulimit is unbounded and fakeroot's `faked` spins; the role pins `nofile:65536:65536`, keep it bounded |
 | Build is far slower than before | The cache key changed (ref, target or kernel options); a full rebuild is expected. Check `~/.cache/openwrt-builder/source` |
 | `Jobs 1` in the build plan / a build far slower than the vCPU count suggests | The guest reports ballooned-down RAM, so `min(vCPU, RAM-GB/2)` collapses to 1. Pin the variant's `source.jobs`, or stop the build host from reclaiming memory (`memory_floating`) |
-| Out of disk during a build | `dl/`, `ccache/` and the tree grow together; `make cache-clean PURGE=1` resets, then the next build is full |
+| Out of disk during a build | `dl/`, `ccache/` and the tree grow together; `make prune PURGE=1` resets, then the next build is full |
 | `apk add kmod-*` fails: `unable to select packages: kernel-…: breaks: kmod-…[kernel=…]` | The image's kernel ABI hash is not the release build's, so the official kmods do not belong to this kernel. Add the module to the variant's `packages` and rebuild, or point apk at this build's own `bin/targets/.../packages`. See `docs/build-pipeline.md` ("Kernel and module ABI") |
 | Artifacts not in the control node's `artifacts/` | The fetch failed; inspect the fetch task. The builder keeps its `bin/` until the next build, so a re-run or a manual `scp` can recover it |
-| `--tags sshd` fails at "Prove a key-only login" | The chosen identity has no authorized key yet: set `host_iac_ssh_pubkey_file` (or root's) and run `make host-bootstrap`, or unset `sshd_hardening_enabled` |
+| `--tags sshd` fails at "Prove a key-only login" | The chosen identity has no authorized key yet: set `host_iac_ssh_pubkey_file` (or root's) and run `make bootstrap-accounts`, or unset `sshd_hardening_enabled` |
 | Cannot reach a builder over SSH | Fix its `ansible_host` in `hosts.yml`; the connection identity comes from the committed `group_vars/all/main.yml` |
 
 ## Manual verification on a disposable host
@@ -289,9 +288,9 @@ reason to skip.
 
 ### Bootstrap and first build
 
-- [ ] `make host-init` scaffolds `inventory/hosts.yml` and `host_vars/<machine>/`;
+- [ ] `make prep` scaffolds `inventory/hosts.yml` and `host_vars/<machine>/`;
       the placeholders are refused until replaced.
-- [ ] `make host-bootstrap`: `iac` created with passwordless sudo and the configured
+- [ ] `make bootstrap-accounts`: `iac` created with passwordless sudo and the configured
       keys, Docker Engine present; a second run changes nothing.
 - [ ] `make build` builds every declared variant and fetches the images into the
       control node's `artifacts/<artifact_id>/targets/...`; `build-info/source.json`
@@ -322,11 +321,11 @@ reason to skip.
 
 - [ ] Changing only a kernel option produces a new cache key and a full rebuild;
       changing nothing reuses the tree.
-- [ ] `make cache-clean` removes `work/` + `ccache/`; `PURGE=1` also drops
+- [ ] `make prune` removes `work/` + `ccache/`; `PURGE=1` also drops
       `source/`, `dl/`, `image/`, and the next build is full.
 - [ ] No firmware secrets are in the artifacts or the tree: a built image carries
       no WAN/root password.
-- [ ] Each machine vault is `0600` and encrypted; `make vault-view` reads it
+- [ ] Each machine vault is `0600` and encrypted; `make view` reads it
       and `-vvv` shows no value.
 - [ ] With `sshd_hardening_enabled`: password login refused, keyed login works, and
       a missing authorized key blocks the role before it writes the config.

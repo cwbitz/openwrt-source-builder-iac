@@ -40,10 +40,10 @@ Two consequences to know before you switch:
 ```bash
 mise install                 # pinned toolchain (.tool-versions)
 make install                 # collections + control-node dependencies
-make host-init HOST=builder-1 HOST_IP=203.0.113.50
+make prep HOST=builder-1 IP=203.0.113.50
 $EDITOR inventory/host_vars/builder-1/main.yml   # real source.ref/target/profile
-make vault-init && make vault-edit HOST=builder-1
-make host-bootstrap          # once per machine; creates the `iac` account
+make edit HOST=builder-1     # the machine's connection vault
+make bootstrap-accounts      # once per machine; creates the `iac` account
 make build                   # every variant, machines in parallel
 ```
 
@@ -57,13 +57,13 @@ Artifacts land in `artifacts/<artifact_id>/targets/<target>/<subtarget>/` plus
 | Target | What it does |
 |--------|--------------|
 | `make install` | Sole dependency entry point (toolchain, collections, sshpass, passlib, Keychain) |
-| `make host-init HOST=… HOST_IP=…` | Scaffold `inventory/hosts.yml`, the group vars and `host_vars/<machine>/` |
-| `make host-bootstrap` | Probe `iac → admin → root` and create/repair the `iac` automation account |
+| `make prep HOST=… IP=…` | Scaffold `inventory/hosts.yml`, the group vars and `host_vars/<machine>/` |
+| `make bootstrap-accounts` | Probe `iac → admin → root` and create/repair the `iac` automation account |
 | `make build` | Build every variant (`HOST=<machine>` limits the machines, `TAGS=<tags>` the task slices) |
 | `make info` | Query the pinned ref, target and profile list without building |
-| `make deploy` | `host-bootstrap` then `build` |
-| `make cache-clean [PURGE=1]` | Prune this project's builder caches (work + ccache; `PURGE=1` drops source trees and `dl/`; `HOST=<machine>` limits it) |
-| `make lint` / `make test` | Local validation (same commands CI runs) |
+| `make deploy` | `bootstrap-accounts` then `build`; `HOST=<machine>` narrows the reachable machines |
+| `make prune [PURGE=1]` | Prune this project's builder caches (work + ccache; `PURGE=1` drops source trees and `dl/`; `HOST=<machine>` limits it) |
+| `make lint` | Local validation (same commands CI runs) |
 
 ## Layout
 
