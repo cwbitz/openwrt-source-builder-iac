@@ -68,7 +68,9 @@ and `vault*.yml` are local-only.
   `SSH_AGENT_*` variables): `agent-fallback` prepares the agent only when
   `agent-needed` finds a key whose permissions OpenSSH would refuse (e.g. `0777`
   on the WSL `/mnt/c` mount), loads the configured keys via
-  `playbooks/ssh_agent_load.yml` (stdin fallback), and the runner retries once on
+  `playbooks/ssh_agent_load.yml` (stdin escape hatch, gated by
+  `AGENT_ALLOW_INSECURE=1` plus a passphrase-protected key; identities expire
+  after `agent_key_lifetime`, default `8h`), and the runner retries once on
   a refused key. Correctly permissioned keys and password auth connect directly,
   with no agent.
 - **The build image** is built on the build host from
