@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/cwbitz/openwrt-source-builder-iac/compare/v0.3.0...v0.3.1) (2026-11-19)
+
+
+### Features
+
+* **make:** select hosts with a comma-separated HOST ([#37](https://github.com/cwbitz/openwrt-source-builder-iac/issues/37)) ([8be49b8](https://github.com/cwbitz/openwrt-source-builder-iac/commit/8be49b8b54654f58216b319a19b19df0669e358b))
+
 ## [0.3.0](https://github.com/cwbitz/openwrt-source-builder-iac/compare/v0.2.7...v0.3.0) (2026-11-19)
 
 
