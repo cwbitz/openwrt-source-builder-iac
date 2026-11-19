@@ -134,7 +134,7 @@ that feed publishes a matching binary repository.
 A source tree is cached per `(target, ref, kernel options)`, not per feed set, so
 a tree that has already been used with another feed set keeps any feed checkouts
 that are no longer declared. That is harmless (only the packages listed in
-`packages` are enabled), and `make cache-clean PURGE=1` removes the tree.
+`packages` are enabled), and `make prune PURGE=1` removes the tree.
 
 ### The build environment and extra tooling
 
@@ -421,7 +421,7 @@ administration:
 
 A first full source build takes tens of minutes and roughly 30 GB
 (`build_dir` + `dl/` + `ccache/`); an incremental `make world` after that takes
-minutes. `make cache-clean PURGE=1` throws the source trees and `dl/` away, so the
+minutes. `make prune PURGE=1` throws the source trees and `dl/` away, so the
 next build is full again.
 
 There is no package-mirror knob: a source build downloads from the sources the
@@ -458,7 +458,7 @@ operator chooses explicitly.
 
 ## Growth path
 
-- **Another machine**: `make host-init HOST=<machine> HOST_IP=<addr>` and list its
+- **Another machine**: `make prep HOST=<machine> IP=<addr>` and list its
   variants in `host_vars/<machine>/main.yml`.
 - **Another variant on a machine**: append an entry to `build_variants` in that
   machine's `main.yml`; no role change.

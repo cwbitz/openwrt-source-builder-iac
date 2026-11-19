@@ -66,7 +66,7 @@
           still carries an example placeholder in source.ref, source.target or
           source.profile. Replace them with real values: the target from
           Makefile targets and the profile from
-          target/linux/<target>/<subtarget>/profiles (make host-init copies the
+          target/linux/<target>/<subtarget>/profiles (make prep copies the
           example verbatim).
         quiet: true
       loop: "{{ build_variants }}"

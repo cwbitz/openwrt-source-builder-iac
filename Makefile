@@ -14,12 +14,12 @@ TAGS ?=
 
 export ANSIBLE_VAULT_PASSWORD_FILE := $(HOME)/.config/projects/openwrt-source-builder-iac/ansible_vault_password
 
-HOST_IP           ?=
+IP                ?=
 
 LIMIT_ARG = $(if $(HOST),--limit $(HOST),)
 TAGS_ARG  = $(if $(TAGS),--tags $(TAGS),)
 
-$(foreach v,HOST HOST_IP,$(if $(filter environment,$(origin $(v))),$(warning $(v) is inherited from the environment; pass $(v)=... explicitly if unintended)))
+$(foreach v,HOST IP,$(if $(filter environment,$(origin $(v))),$(warning $(v) is inherited from the environment; pass $(v)=... explicitly if unintended)))
 
 QUIET ?=
 say = $(if $(QUIET),:,echo)
@@ -77,8 +77,8 @@ ANSIBLE_PYTHON ?= $(shell \
 	if [ -n "$$p" ]; then f=$$(readlink -f "$$p" 2>/dev/null); \
 	  if [ -f "$$f" ] && head -c 2 "$$f" | grep -q '#!'; then head -1 "$$f" | sed -n 's|^#! *||; s| .*||p'; fi; fi)
 
-.PHONY: help install vault-init host-init vault-edit vault-view \
-        host-bootstrap hostkey-init info build deploy cache-clean
+.PHONY: help install vault-init prep edit view \
+        bootstrap-accounts hostkeys info build deploy prune
 .PHONY: ensure-toolchain ensure-sshpass ensure-keychain ensure-ansible-collections \
         ensure-passlib keychain-fetch verify-keychain-pin run-playbook \
         run-build-playbook agent-needed agent-fallback agent-ensure agent-load \
@@ -95,8 +95,8 @@ help: ## Show this help
 
 install: ensure-toolchain ensure-sshpass ensure-keychain ensure-ansible-collections ensure-passlib ## Install the pinned toolchain, collections, and control-node dependencies
 
-host-init: vault-init ## Scaffold inventory + host_vars/<HOST> from the examples (comment-free); HOST=<machine> is required, HOST_IP default CHANGE_ME_HOST_IP, FORCE=1 replaces an existing entry
-	@test -n "$(HOST)" || { echo "ERROR: HOST=<machine> is required, e.g. make host-init HOST=builder-1 HOST_IP=192.0.2.10" >&2; exit 1; }
+prep: vault-init ## Scaffold inventory + host_vars/<HOST> from the examples (comment-free); HOST=<machine> is required, IP default CHANGE_ME_HOST_IP, FORCE=1 replaces an existing entry
+	@test -n "$(HOST)" || { echo "ERROR: HOST=<machine> is required, e.g. make prep HOST=builder-1 IP=192.0.2.10" >&2; exit 1; }
 	@[ -e $(INV) ] || { python3 $(CURDIR)/scripts/render_clean_template.py --strip-blank-lines $(INV).example $(INV); echo "created $(INV) (comments and blank lines stripped)"; }
 	@[ -e inventory/group_vars/builders/main.yml ] || { python3 $(CURDIR)/scripts/render_clean_template.py --strip-blank-lines inventory/group_vars/builders/main.yml.example inventory/group_vars/builders/main.yml; echo "created inventory/group_vars/builders/main.yml (comments and blank lines stripped)"; }
 	@install -d -m 0700 inventory/host_vars/$(HOST)
@@ -104,15 +104,15 @@ host-init: vault-init ## Scaffold inventory + host_vars/<HOST> from the examples
 	@[ -e inventory/host_vars/$(HOST)/vault.yml ] || { \
 		python3 $(CURDIR)/scripts/render_clean_template.py --strip-blank-lines inventory/host_vars/example/vault.yml.example inventory/host_vars/$(HOST)/vault.yml; \
 		chmod 600 inventory/host_vars/$(HOST)/vault.yml; }
-	@python3 $(CURDIR)/scripts/ensure_inventory_host.py $(INV) "$(HOST)" --group builders --ansible-host "$(HOST_IP)" $(if $(FORCE),--force)
-	@echo "scaffolded inventory/host_vars/$(HOST)/ (machine registered under the builders group; edit build_variants[] in main.yml, then: make vault-edit HOST=$(HOST))"
+	@python3 $(CURDIR)/scripts/ensure_inventory_host.py $(INV) "$(HOST)" --group builders --ansible-host "$(IP)" $(if $(FORCE),--force)
+	@echo "scaffolded inventory/host_vars/$(HOST)/ (machine registered under the builders group; edit build_variants[] in main.yml, then: make edit HOST=$(HOST))"
 
-host-bootstrap: rebuild-reset hostkey-init ## Create the iac automation account (bootstrap.yml; HOST=<machine>, TAGS=<tags>; REFRESH=1 refreshes host keys first; REBUILD=1 after a host rebuild)
+bootstrap-accounts: rebuild-reset hostkeys ## Create/repair the iac automation account on every selected machine (bootstrap.yml; HOST=<machine>, TAGS=<tags>; REBUILD=1 after a host rebuild)
 	@test -f $(INV) || { \
 		echo "ERROR: $(INV) not found — copy $(INV).example and fill it in."; exit 1; }
 	@$(MAKE) --no-print-directory run-playbook PLAYBOOK=playbooks/bootstrap.yml
 
-vault-init: ## One-time: generate the vault password (idempotent)
+vault-init:
 	@mkdir -p $(dir $(ANSIBLE_VAULT_PASSWORD_FILE))
 	@if [ ! -s $(ANSIBLE_VAULT_PASSWORD_FILE) ]; then \
 		openssl rand -base64 32 > $(ANSIBLE_VAULT_PASSWORD_FILE); \
@@ -129,13 +129,13 @@ vault-init: ## One-time: generate the vault password (idempotent)
 			|| { printf '%s\n' "$(VAULT_PASSWORD_HINT)" >&2; exit 1; }; \
 	fi
 
-vault-edit: vault-init ## Edit one machine's connection vault (keys re-sorted alphabetically; refuses a save when the vault changed during the edit; HOST=<machine>; auto when a single machine; VAULT_FILE=<path>)
+edit: vault-init ## Edit one machine's connection vault (keys re-sorted alphabetically; refuses a save when the vault changed during the edit; HOST=<machine>; auto when a single machine; VAULT_FILE=<path>)
 	@set -e; \
 	p="$(VAULT_PATH)"; \
 	if [ -z "$$p" ]; then \
 		found="$$(ls -1d inventory/host_vars/*/vault.yml 2>/dev/null | grep -v '/example/' || true)"; \
 		if [ -z "$$found" ]; then \
-			echo "ERROR: no machine vault yet; run: make host-init HOST=<machine>" >&2; \
+			echo "ERROR: no machine vault yet; run: make prep HOST=<machine>" >&2; \
 			exit 1; \
 		fi; \
 		if [ "$$(printf '%s\n' "$$found" | wc -l)" -gt 1 ]; then \
@@ -158,14 +158,14 @@ vault-edit: vault-init ## Edit one machine's connection vault (keys re-sorted al
 	fi; \
 	python3 $(CURDIR)/scripts/edit_vault.py "$$p"
 
-vault-view: vault-init ## View machine connection vaults (read-only; HOST=<machine>; no HOST = every machine)
+view: vault-init ## View machine connection vaults (read-only; HOST=<machine>; no HOST = every machine)
 	@set -e; \
 	files="$(VAULT_PATH)"; \
 	if [ -z "$$files" ]; then \
 		files="$$(ls -1d inventory/host_vars/*/vault.yml 2>/dev/null | grep -v '/example/' || true)"; \
 	fi; \
 	if [ -z "$$files" ]; then \
-		echo "(no machine vaults yet; run: make host-init HOST=<machine>)" >&2; \
+		echo "(no machine vaults yet; run: make prep HOST=<machine>)" >&2; \
 		exit 0; \
 	fi; \
 	for p in $$files; do \
@@ -177,7 +177,7 @@ vault-view: vault-init ## View machine connection vaults (read-only; HOST=<machi
 		else cat "$$p"; fi; \
 	done
 
-test: ## Run the unit tests for the control-node helpers
+test:
 	pytest -q tests
 
 lint: install vault-init validate-knobs
@@ -205,7 +205,7 @@ rebuild-reset:
 		rm -rf .cache/facts; \
 	fi
 
-hostkey-init: vault-init ## Refresh every managed host's SSH host key in known_hosts (FORCE=1 or REBUILD=1 replaces a changed key)
+hostkeys: vault-init ## Refresh every managed host's SSH host key in known_hosts (FORCE=1 or REBUILD=1 replaces a changed key)
 	@set -e; \
 	nh="$(KNOWN_HOSTS)"; mkdir -p "$$(dirname "$$nh")"; tmp=$$(mktemp); targets=$$(mktemp); tsv=$$(mktemp); pub=$$(mktemp); failures=0; \
 	trap 'rm -f "$$tmp" "$$targets" "$$tsv" "$$pub"' EXIT; \
@@ -238,7 +238,7 @@ hostkey-init: vault-init ## Refresh every managed host's SSH host key in known_h
 	[ "$$failures" -eq 0 ] || { echo "some host keys were not refreshed; known_hosts updated for the rest" >&2; exit 1; }; \
 	echo "host keys refreshed in $$nh"
 
-info: ## Query source/target/profile info (no build; HOST=<machine>, TAGS=<tags>)
+info: ## Query source/target/profile info (no build; HOST=<name>, TAGS=<tags>)
 	@test -f $(INV) || { \
 		echo "ERROR: $(INV) not found — copy $(INV).example and fill it in."; exit 1; }
 	@log=$$(mktemp); spin=""; \
@@ -259,15 +259,15 @@ info: ## Query source/target/profile info (no build; HOST=<machine>, TAGS=<tags>
 	cat "$$log"; \
 	exit $$rc
 
-build: validate-knobs ## Build a customized OpenWrt firmware image from source (HOST=<machine>, TAGS=<tags>)
+build: validate-knobs ## Build a customized OpenWrt firmware image from source (HOST=<name>, TAGS=<tags>)
 	@test -f $(INV) || { \
 		echo "ERROR: $(INV) not found — copy $(INV).example and fill it in."; exit 1; }
 	@$(MAKE) --no-print-directory run-build-playbook
 
-deploy: host-bootstrap build ## One-click: bootstrap the build host, then build every variant (HOST=<machine>, TAGS=<tags>; REFRESH=1 refreshes host keys first; REBUILD=1 after a host rebuild)
+deploy: bootstrap-accounts build ## One-click: create/repair the iac account, then build every variant (HOST=<machine>, TAGS=<tags>; REBUILD=1 after a host rebuild)
 
 # This project owns only its own caches; never touch another project's tree.
-cache-clean: vault-init agent-fallback ## Prune this project's builder caches (work + ccache; PURGE=1 also drops source trees and dl; HOST=<machine>)
+prune: vault-init agent-fallback ## Prune this project's builder caches (work + ccache; PURGE=1 also drops source trees and dl; HOST=<machine>)
 	@test -f $(INV) || { echo "ERROR: $(INV) not found."; exit 1; }
 	@$(SSH_AGENT_RUN) $(ANS_PLAY) -i $(INV) playbooks/cache_clean.yml -e "cache_purge=$(if $(PURGE),true,false)" $(LIMIT_ARG)
 
