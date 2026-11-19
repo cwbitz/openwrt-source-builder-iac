@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.3.0](https://github.com/cwbitz/openwrt-source-builder-iac/compare/v0.2.7...v0.3.0) (2026-11-19)
+
+
+### ⚠ BREAKING CHANGES
+
+* **make:** name the targets after the operation ([#35](https://github.com/cwbitz/openwrt-source-builder-iac/issues/35))
+
+### Code Refactoring
+
+* **make:** name the targets after the operation ([#35](https://github.com/cwbitz/openwrt-source-builder-iac/issues/35)) ([6c7b8c6](https://github.com/cwbitz/openwrt-source-builder-iac/commit/6c7b8c66ced7627d28824a41a9a4b1b629155c08))
+
 ## [0.2.7](https://github.com/cwbitz/openwrt-source-builder-iac/compare/v0.2.6...v0.2.7) (2026-11-18)
 
 
