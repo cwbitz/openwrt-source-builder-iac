@@ -25,16 +25,18 @@ lives in `roles/buildroot/`; the opt-in key-only SSH hardening lives in
 - `make bootstrap-accounts` — once: probe `iac → admin → root` on every machine
   and create/repair the `iac` automation account (key-first, NOPASSWD sudo,
   `docker` group) plus the human `admin` account when `create_admin_account` is
-  set; host keys are refreshed first.
+  set; host keys are refreshed first. `HOST=<machine>` (or `HOST=a,b`) narrows
+  the selection.
 - `make deploy` — one-click: `bootstrap-accounts` then `build`.
 - `make build` / `make info` — build every variant (machines in parallel) / query
-  the pinned ref and profile list; limit to one machine with `HOST=<machine>`
-  and select task slices with `TAGS=<tags>`.
+  the pinned ref and profile list; limit the reachable machines with
+  `HOST=<machine>` (or `HOST=a,b`) and select task slices with `TAGS=<tags>`.
 - `make prune [PURGE=1]` — prune this project's caches on the builder
   (`work/` + `ccache/`; `PURGE=1` also drops `source/`, `dl/`, `image/`); limit
-  to one machine with `HOST=<machine>`.
-- `make hostkeys` — refresh every managed host's SSH host key in the control
-  node's `known_hosts` (drop the stale entry, re-add).
+  the machines with `HOST=<machine>`.
+- `make hostkeys` — refresh the selected machines' SSH host keys in the control
+  node's `known_hosts` (drop the stale entry, re-add; `HOST=<machine>` narrows
+  it).
 - `make edit HOST=<machine>` / `make view [HOST=<machine>]`
   — the per-machine connection vault; plaintext is encrypted first, the keys are
   re-sorted alphabetically after editing, and a save is refused when the vault
@@ -46,8 +48,13 @@ lives in `roles/buildroot/`; the opt-in key-only SSH hardening lives in
   unit suite) and the `ensure-*` / `agent-*` / `keychain-*` / `run-playbook`
   helpers. `make build` and `make lint` assert every operator knob against
   `inventory/knob_schema.yml` through `playbooks/validate_knobs.yml`.
-- `TAGS` appends `--tags` and `HOST` appends `--limit`, e.g.
-  `make build HOST=builder-1 TAGS=sshd`.
+- `TAGS` appends `--tags` and `HOST` appends `--limit '<HOST>:localhost'`, e.g.
+  `make build HOST=builder-1 TAGS=sshd` or `make deploy HOST=builder-1`.
+- `HOST` takes one or more **literal** host names, comma-separated
+  (`HOST=builder-1,builder-2`); Ansible pattern syntax, spaces and `:` are
+  rejected at parse time. The `:localhost` suffix keeps the control-node plays
+  in the run; targets that address one host's files (`prep`, `edit`) refuse a
+  list.
 
 ## Variant schema
 

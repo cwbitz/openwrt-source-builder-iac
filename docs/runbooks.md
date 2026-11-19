@@ -61,11 +61,11 @@ until they are replaced.
 
 ### `bootstrap-accounts`
 
-`make bootstrap-accounts` probes `iac → admin → root` on **every**
-machine (or only `HOST=<machine>`) and uses the first identity that
-works on each; when that is not `iac`, it
-(re)creates the `iac` automation account (key-first, NOPASSWD sudo, the `docker`
-group when present) and the optional human `admin` account. It self-heals a
+`make bootstrap-accounts` probes `iac → admin → root` on **every** machine (or
+only the machines named in `HOST=<machine>`/`HOST=a,b`) and uses the first
+identity that works on each; when that is not `iac`, it (re)creates the `iac`
+automation account (key-first, NOPASSWD sudo, the `docker` group when present)
+and the optional human `admin` account. It self-heals a
 rotated/deleted credential. With no `host_iac_ssh_pubkey_file`, an empty
 `vault_host_iac_password` is generated into the machine's vault under the same
 name. Passwords use a per-account random salt with `update_password: on_create`.
@@ -75,7 +75,8 @@ See [architecture](architecture.md) for the full model.
 
 ```bash
 make build                            # build every variant (machines in parallel)
-make build HOST=builder-1  # single machine
+make build HOST=builder-1             # only this machine
+make build HOST=builder-1,builder-2   # only these machines
 make deploy                           # bootstrap-accounts, then build (fresh host to image)
 ```
 

@@ -16,7 +16,13 @@ export ANSIBLE_VAULT_PASSWORD_FILE := $(HOME)/.config/projects/openwrt-source-bu
 
 IP                ?=
 
-LIMIT_ARG = $(if $(HOST),--limit $(HOST),)
+comma := ,
+HOST_LITERAL_BAD = $(strip $(findstring *,$(HOST))$(findstring ?,$(HOST))$(findstring [,$(HOST))$(findstring ],$(HOST))$(findstring !,$(HOST))$(findstring :,$(HOST)))
+$(if $(HOST_LITERAL_BAD),$(error HOST must be comma-separated literal host names (no Ansible pattern syntax); got '$(HOST)'))
+$(if $(word 2,$(HOST)),$(error HOST must be comma-separated literal host names (no spaces); got '$(HOST)'))
+HOST_LIST = $(strip $(subst $(comma), ,$(HOST)))
+HOST_ARG  = $(if $(HOST),--limit '$(HOST):localhost',)
+HOST_SINGLE_GUARD = test "$$(printf '%s' '$(HOST_LIST)' | wc -w)" -le 1 || { echo "ERROR: this target needs exactly one HOST; got '$(HOST)'." >&2; exit 2; }
 TAGS_ARG  = $(if $(TAGS),--tags $(TAGS),)
 
 $(foreach v,HOST IP,$(if $(filter environment,$(origin $(v))),$(warning $(v) is inherited from the environment; pass $(v)=... explicitly if unintended)))
@@ -96,7 +102,7 @@ help: ## Show this help
 install: ensure-toolchain ensure-sshpass ensure-keychain ensure-ansible-collections ensure-passlib ## Install the pinned toolchain, collections, and control-node dependencies
 
 prep: vault-init ## Scaffold inventory + host_vars/<HOST> from the examples (comment-free); HOST=<machine> is required, IP default CHANGE_ME_HOST_IP, FORCE=1 replaces an existing entry
-	@test -n "$(HOST)" || { echo "ERROR: HOST=<machine> is required, e.g. make prep HOST=builder-1 IP=192.0.2.10" >&2; exit 1; }
+	@$(HOST_SINGLE_GUARD); test -n "$(HOST)" || { echo "ERROR: HOST=<machine> is required, e.g. make prep HOST=builder-1 IP=192.0.2.10" >&2; exit 1; }
 	@[ -e $(INV) ] || { python3 $(CURDIR)/scripts/render_clean_template.py --strip-blank-lines $(INV).example $(INV); echo "created $(INV) (comments and blank lines stripped)"; }
 	@[ -e inventory/group_vars/builders/main.yml ] || { python3 $(CURDIR)/scripts/render_clean_template.py --strip-blank-lines inventory/group_vars/builders/main.yml.example inventory/group_vars/builders/main.yml; echo "created inventory/group_vars/builders/main.yml (comments and blank lines stripped)"; }
 	@install -d -m 0700 inventory/host_vars/$(HOST)
@@ -130,7 +136,7 @@ vault-init:
 	fi
 
 edit: vault-init ## Edit one machine's connection vault (keys re-sorted alphabetically; refuses a save when the vault changed during the edit; HOST=<machine>; auto when a single machine; VAULT_FILE=<path>)
-	@set -e; \
+	@$(HOST_SINGLE_GUARD); set -e; \
 	p="$(VAULT_PATH)"; \
 	if [ -z "$$p" ]; then \
 		found="$$(ls -1d inventory/host_vars/*/vault.yml 2>/dev/null | grep -v '/example/' || true)"; \
@@ -210,7 +216,7 @@ hostkeys: vault-init ## Refresh every managed host's SSH host key in known_hosts
 	nh="$(KNOWN_HOSTS)"; mkdir -p "$$(dirname "$$nh")"; tmp=$$(mktemp); targets=$$(mktemp); tsv=$$(mktemp); pub=$$(mktemp); failures=0; \
 	trap 'rm -f "$$tmp" "$$targets" "$$tsv" "$$pub"' EXIT; \
 	if [ -f "$$nh" ]; then cp "$$nh" "$$tmp"; else : > "$$tmp"; fi; \
-	$(ANS_PLAY) -i $(INV) playbooks/host_keys.yml -e host_keys_out="$$targets" >/dev/null; \
+	$(ANS_PLAY) -i $(INV) playbooks/host_keys.yml -e host_keys_out="$$targets" -e host_keys_hosts='$(HOST)' >/dev/null; \
 	python3 -c 'import json,sys; [print("{}\t{}\t{}".format(t["name"],t["host"],t["port"])) for t in json.load(open(sys.argv[1]))]' "$$targets" > "$$tsv"; \
 	mv "$$tsv" "$$targets"; \
 	test -s "$$targets" || { echo "ERROR: no hosts resolved from the inventory."; exit 1; }; \
@@ -269,7 +275,7 @@ deploy: bootstrap-accounts build ## One-click: create/repair the iac account, th
 # This project owns only its own caches; never touch another project's tree.
 prune: vault-init agent-fallback ## Prune this project's builder caches (work + ccache; PURGE=1 also drops source trees and dl; HOST=<machine>)
 	@test -f $(INV) || { echo "ERROR: $(INV) not found."; exit 1; }
-	@$(SSH_AGENT_RUN) $(ANS_PLAY) -i $(INV) playbooks/cache_clean.yml -e "cache_purge=$(if $(PURGE),true,false)" $(LIMIT_ARG)
+	@$(SSH_AGENT_RUN) $(ANS_PLAY) -i $(INV) playbooks/cache_clean.yml -e "cache_purge=$(if $(PURGE),true,false)" $(HOST_ARG)
 
 agent-needed: vault-init
 	@$(SSH_AGENT_PROBE)
@@ -398,11 +404,11 @@ ensure-keychain: verify-keychain-pin
 	fi
 
 run-playbook: install vault-init agent-fallback
-	@$(SSH_AGENT_RUN) $(ANS_PLAY) -i $(INV) $(PLAYBOOK) $(LIMIT_ARG) $(TAGS_ARG)
+	@$(SSH_AGENT_RUN) $(ANS_PLAY) -i $(INV) $(PLAYBOOK) $(HOST_ARG) $(TAGS_ARG)
 
 run-build-playbook: install vault-init agent-fallback
 	@ANS_PLAY="$(ANS_PLAY)" INV="$(INV)" SSH_AGENT_RUN="$(SSH_AGENT_RUN)" \
-		BUILD_EXTRA="$(LIMIT_ARG) $(TAGS_ARG)" $(CURDIR)/scripts/run-build.sh
+		BUILD_EXTRA="$(HOST_ARG) $(TAGS_ARG)" $(CURDIR)/scripts/run-build.sh
 
 .PHONY: validate-knobs
 validate-knobs: vault-init

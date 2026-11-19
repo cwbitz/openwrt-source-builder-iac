@@ -59,10 +59,10 @@ Artifacts land in `artifacts/<artifact_id>/targets/<target>/<subtarget>/` plus
 | `make install` | Sole dependency entry point (toolchain, collections, sshpass, passlib, Keychain) |
 | `make prep HOST=… IP=…` | Scaffold `inventory/hosts.yml`, the group vars and `host_vars/<machine>/` |
 | `make bootstrap-accounts` | Probe `iac → admin → root` and create/repair the `iac` automation account |
-| `make build` | Build every variant (`HOST=<machine>` limits the machines, `TAGS=<tags>` the task slices) |
+| `make build` | Build every variant (`HOST=<machine>` or `HOST=a,b` limits the machines, `TAGS=<tags>` the task slices) |
 | `make info` | Query the pinned ref, target and profile list without building |
-| `make deploy` | `bootstrap-accounts` then `build`; `HOST=<machine>` narrows the reachable machines |
-| `make prune [PURGE=1]` | Prune this project's builder caches (work + ccache; `PURGE=1` drops source trees and `dl/`; `HOST=<machine>` limits it) |
+| `make deploy` | `bootstrap-accounts` then `build`; `HOST=<machine>` or `HOST=a,b` narrows the reachable machines |
+| `make prune [PURGE=1]` | Prune this project's builder caches (work + ccache; `PURGE=1` drops source trees and `dl/`; `HOST=<machine>` or `HOST=a,b` limits it) |
 | `make lint` | Local validation (same commands CI runs) |
 
 ## Layout
