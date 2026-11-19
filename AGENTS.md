@@ -40,8 +40,9 @@ lives in `roles/buildroot/`; the opt-in key-only SSH hardening lives in
 - `make edit HOST=<machine>` / `make view [HOST=<machine>]`
   — the per-machine connection vault; plaintext is encrypted first, the keys are
   re-sorted alphabetically after editing, and a save is refused when the vault
-  changed while the editor was open (the edited text is kept for a merge). With a
-  single machine `HOST` is implied; `VAULT_FILE=<path>` overrides the path.
+  changed while the editor was open (the edited text is kept for a merge). With no
+  `HOST`, a single-machine inventory resolves it: `edit` needs no argument and
+  `view` prints every machine's vault.
 - Internal (hidden from `make help`): `lint` (syntax-check + `ansible-lint` +
   `yamllint` + `shellcheck` + the operator-example audit + the knob validation +
   `scripts/check_repo_privacy.py` + `gitleaks`; run by CI), `make test` (helper
