@@ -4,11 +4,10 @@ SHELL := /bin/bash
 ANS_PLAY := ansible-playbook
 INV      := inventory/hosts.yml
 # Connection secrets are per machine (inventory/host_vars/<machine>/vault.yml).
-# Select one with HOST=<machine>; with a single machine it is implied. VAULT_FILE
-# overrides the path outright (e.g. a separate test inventory). Keep the default
-# path in sync with `vault_file` in inventory/group_vars/all/main.yml.
-VAULT_FILE ?=
-VAULT_PATH  = $(if $(VAULT_FILE),$(VAULT_FILE),$(if $(filter command line environment,$(origin HOST)),inventory/host_vars/$(HOST)/vault.yml,))
+# HOST selects one; with a single machine it is implied. Keep the default path
+# in sync with `vault_file` in inventory/group_vars/all/main.yml.
+EFFECTIVE_HOST = $(if $(HOST),$(HOST),$(shell ansible-inventory -i $(INV) --list 2>/dev/null | python3 -c 'import json,sys; h=list(json.load(sys.stdin).get("_meta",{}).get("hostvars",{}) or {}); print(h[0] if len(h)==1 else "")'))
+VAULT_PATH  = $(if $(EFFECTIVE_HOST),inventory/host_vars/$(EFFECTIVE_HOST)/vault.yml,)
 
 TAGS ?=
 
@@ -27,12 +26,7 @@ TAGS_ARG  = $(if $(TAGS),--tags $(TAGS),)
 
 $(foreach v,HOST IP,$(if $(filter environment,$(origin $(v))),$(warning $(v) is inherited from the environment; pass $(v)=... explicitly if unintended)))
 
-QUIET ?=
-say = $(if $(QUIET),:,echo)
-
-REFRESH ?=
 REBUILD ?=
-KNOWN_HOSTS ?= $(HOME)/.ssh/known_hosts
 
 VAULT_PASSWORD_HINT := ERROR: Ansible Vault cannot decrypt this file - the password in $(ANSIBLE_VAULT_PASSWORD_FILE) is missing or incorrect. Restore the original password, or re-encrypt the vault file with the current one.
 
@@ -65,13 +59,13 @@ define SSH_AGENT_PREPARE
 	mkdir -p "$$(dirname "$(SSH_AGENT_ENV)")"; \
 	rm -f "$(SSH_AGENT_ENV)"; \
 	if [ -n "$${SSH_AUTH_SOCK:-}" ] && ssh-add -l >/dev/null 2>&1; then \
-		$(say) "ssh-agent: reusing loaded agent"; \
+		echo "ssh-agent: reusing loaded agent"; \
 		echo "export SSH_AUTH_SOCK='$$SSH_AUTH_SOCK'" > "$(SSH_AGENT_ENV)"; exit 0; \
 	fi; \
 	if [ "$(SSH_AGENT_FORCE)" != "1" ] && ! $(SSH_AGENT_PROBE); then \
-		$(say) "ssh-agent: not needed (keys usable or password auth)"; exit 0; \
+		echo "ssh-agent: not needed (keys usable or password auth)"; exit 0; \
 	fi; \
-	$(say) "ssh-agent: starting Keychain and loading keys"; \
+	echo "ssh-agent: starting Keychain and loading keys"; \
 	eval "$$($(KEYCHAIN_BIN) agent start --eval --quiet 2>/dev/null)"; \
 	echo "export SSH_AUTH_SOCK='$$SSH_AUTH_SOCK'" > "$(SSH_AGENT_ENV)"; \
 	$(ANS_PLAY) -i $(INV) $(SSH_AGENT_LOAD_PLAYBOOK)
@@ -135,21 +129,12 @@ vault-init:
 			|| { printf '%s\n' "$(VAULT_PASSWORD_HINT)" >&2; exit 1; }; \
 	fi
 
-edit: vault-init ## Edit one machine's connection vault (keys re-sorted alphabetically; refuses a save when the vault changed during the edit; HOST=<machine>; auto when a single machine; VAULT_FILE=<path>)
+edit: vault-init ## Edit one machine's connection vault (keys re-sorted alphabetically; refuses a save when the vault changed during the edit; HOST=<machine>; auto when a single machine)
 	@$(HOST_SINGLE_GUARD); set -e; \
 	p="$(VAULT_PATH)"; \
 	if [ -z "$$p" ]; then \
-		found="$$(ls -1d inventory/host_vars/*/vault.yml 2>/dev/null | grep -v '/example/' || true)"; \
-		if [ -z "$$found" ]; then \
-			echo "ERROR: no machine vault yet; run: make prep HOST=<machine>" >&2; \
-			exit 1; \
-		fi; \
-		if [ "$$(printf '%s\n' "$$found" | wc -l)" -gt 1 ]; then \
-			echo "ERROR: several machine vaults; pass HOST=<machine> or VAULT_FILE=<path>:" >&2; \
-			printf '%s\n' "$$found" | sed 's/^/  /' >&2; \
-			exit 1; \
-		fi; \
-		p="$$found"; \
+		echo "ERROR: cannot resolve the single machine in the inventory; pass HOST=<machine>." >&2; \
+		exit 1; \
 	fi; \
 	if [ ! -f "$$p" ]; then \
 		echo "No such vault file: $$p" >&2; \
@@ -213,7 +198,7 @@ rebuild-reset:
 
 hostkeys: vault-init ## Refresh every managed host's SSH host key in known_hosts (FORCE=1 or REBUILD=1 replaces a changed key)
 	@set -e; \
-	nh="$(KNOWN_HOSTS)"; mkdir -p "$$(dirname "$$nh")"; tmp=$$(mktemp); targets=$$(mktemp); tsv=$$(mktemp); pub=$$(mktemp); failures=0; \
+	nh="$(HOME)/.ssh/known_hosts"; mkdir -p "$$(dirname "$$nh")"; tmp=$$(mktemp); targets=$$(mktemp); tsv=$$(mktemp); pub=$$(mktemp); failures=0; \
 	trap 'rm -f "$$tmp" "$$targets" "$$tsv" "$$pub"' EXIT; \
 	if [ -f "$$nh" ]; then cp "$$nh" "$$tmp"; else : > "$$tmp"; fi; \
 	$(ANS_PLAY) -i $(INV) playbooks/host_keys.yml -e host_keys_out="$$targets" -e host_keys_hosts='$(HOST)' >/dev/null; \
@@ -255,7 +240,6 @@ info: ## Query source/target/profile info (no build; HOST=<name>, TAGS=<tags>)
 	else \
 		printf 'Querying source build info\n' >&2; \
 	fi; \
-	QUIET=1 \
 	ANSIBLE_STDOUT_CALLBACK=info_format \
 	ANSIBLE_CALLBACK_PLUGINS=$(CURDIR)/callback_plugins \
 	ANSIBLE_CALLBACKS_ENABLED=info_silent \
@@ -308,19 +292,19 @@ ensure-toolchain:
 		|| { echo "ERROR: python3 >= 3.8 required; found $$(python3 --version 2>&1)."; exit 1; }
 	@command -v openssl >/dev/null 2>&1 \
 		|| { echo "ERROR: openssl is required (secret generation). Install it."; exit 1; }
-	@$(say) "toolchain: python3 $$(python3 --version 2>&1 | awk '{print $$2}'), openssl $$(openssl version | awk '{print $$2}')"
+	@echo "toolchain: python3 $$(python3 --version 2>&1 | awk '{print $$2}'), openssl $$(openssl version | awk '{print $$2}')"
 
 ensure-sshpass:
 	@set -e; \
 	if command -v sshpass >/dev/null 2>&1 || [ -x "$(SSHPASS_BIN)" ]; then \
-		$(say) "sshpass: present"; exit 0; \
+		echo "sshpass: present"; exit 0; \
 	fi; \
 	if sudo -n true >/dev/null 2>&1 && command -v apt-get >/dev/null 2>&1; then \
-		$(say) "sshpass: installing via sudo apt-get..."; \
+		echo "sshpass: installing via sudo apt-get..."; \
 		if sudo -n apt-get install -y sshpass; then exit 0; fi; \
-		$(say) "sshpass: sudo install failed — trying a rootless install..."; \
+		echo "sshpass: sudo install failed — trying a rootless install..."; \
 	fi; \
-	$(say) "sshpass: installing rootless into $(dir $(SSHPASS_BIN))..."; \
+	echo "sshpass: installing rootless into $(dir $(SSHPASS_BIN))..."; \
 	if ! command -v apt-get >/dev/null 2>&1 || ! command -v dpkg-deb >/dev/null 2>&1; then \
 		echo "ERROR: cannot auto-install sshpass (apt-get/dpkg-deb not found)." >&2; \
 		echo "  Install sshpass manually, or use key-only bootstrap credentials" >&2; \
@@ -335,18 +319,18 @@ ensure-sshpass:
 	dpkg-deb -x sshpass_*.deb root; \
 	mkdir -p "$(dir $(SSHPASS_BIN))"; \
 	install -m 0755 root/usr/bin/sshpass "$(SSHPASS_BIN)"; \
-	$(say) "sshpass installed: $(SSHPASS_BIN)"
+	echo "sshpass installed: $(SSHPASS_BIN)"
 
 ensure-passlib:
 	@set -e; \
 	py="$(ANSIBLE_PYTHON)"; [ -n "$$py" ] || py=$$(command -v python3); \
 	if "$$py" -c 'import passlib' >/dev/null 2>&1; then \
-		$(say) "passlib: present ($$py)"; exit 0; \
+		echo "passlib: present ($$py)"; exit 0; \
 	fi; \
 	if "$$py" -m pip install --quiet passlib >/dev/null 2>&1; then \
-		$(say) "passlib: installed with pip ($$py)"; exit 0; \
+		echo "passlib: installed with pip ($$py)"; exit 0; \
 	fi; \
-	$(say) "passlib: pip unavailable for $$py — using the rootless deb fallback..."; \
+	echo "passlib: pip unavailable for $$py — using the rootless deb fallback..."; \
 	if ! command -v apt-get >/dev/null 2>&1 || ! command -v dpkg-deb >/dev/null 2>&1; then \
 		echo "ERROR: cannot auto-install passlib (apt-get/dpkg-deb not found)." >&2; \
 		echo "  Install python3-passlib with pip or your package manager." >&2; \
@@ -361,10 +345,10 @@ ensure-passlib:
 	dpkg-deb -x python3-passlib_*.deb root; \
 	mkdir -p "$$dest"; \
 	cp -a root/usr/lib/python3/dist-packages/passlib "$$dest/"; \
-	$(say) "passlib installed: $$dest/passlib"
+	echo "passlib installed: $$dest/passlib"
 
 ensure-ansible-collections:
-	@ansible-galaxy collection install -r requirements.yml $(if $(QUIET),1>/dev/null,)
+	@ansible-galaxy collection install -r requirements.yml
 
 keychain-fetch:
 	@set -e; \
@@ -373,7 +357,7 @@ keychain-fetch:
 	   && printf '%s  %s\n' "$(KEYCHAIN_SHA256)" "$(KEYCHAIN_ASSET)" | sha256sum -c - >/dev/null 2>&1; then \
 		exit 0; \
 	fi; \
-	$(say) "downloading keychain $(KEYCHAIN_VERSION)..."; \
+	echo "downloading keychain $(KEYCHAIN_VERSION)..."; \
 	if ! curl -fsSL -o "$(KEYCHAIN_ASSET).tmp" "$(KEYCHAIN_URL)"; then \
 		rm -f "$(KEYCHAIN_ASSET).tmp"; \
 		echo "ERROR: failed to download keychain v$(KEYCHAIN_VERSION)." >&2; \
@@ -390,17 +374,17 @@ verify-keychain-pin: keychain-fetch
 		|| { echo "ERROR: keychain asset checksum mismatch: $(KEYCHAIN_ASSET)" >&2; \
 		     echo "  Remove it and re-run, or download it manually from $(KEYCHAIN_URL)." >&2; \
 		     exit 1; }; \
-	$(say) "keychain pin OK: v$(KEYCHAIN_VERSION)"
+	echo "keychain pin OK: v$(KEYCHAIN_VERSION)"
 
 ensure-keychain: verify-keychain-pin
 	@set -e; \
 	if [ -f "$(KEYCHAIN_BIN)" ] \
 	   && printf '%s  %s\n' "$(KEYCHAIN_SHA256)" "$(KEYCHAIN_BIN)" | sha256sum -c - >/dev/null 2>&1; then \
-		$(say) "keychain:  present (v$(KEYCHAIN_VERSION), $(KEYCHAIN_BIN))"; \
+		echo "keychain:  present (v$(KEYCHAIN_VERSION), $(KEYCHAIN_BIN))"; \
 	else \
 		mkdir -p "$$(dirname "$(KEYCHAIN_BIN)")"; \
 		install -m 0755 "$(KEYCHAIN_ASSET)" "$(KEYCHAIN_BIN)"; \
-		$(say) "keychain installed: $(KEYCHAIN_BIN) (v$(KEYCHAIN_VERSION))"; \
+		echo "keychain installed: $(KEYCHAIN_BIN) (v$(KEYCHAIN_VERSION))"; \
 	fi
 
 run-playbook: install vault-init agent-fallback
