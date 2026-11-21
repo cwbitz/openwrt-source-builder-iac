@@ -51,9 +51,10 @@ lives in `roles/buildroot/`; the opt-in key-only SSH hardening lives in
 - Internal (hidden from `make help`): `lint` (syntax-check + `ansible-lint` +
   `yamllint` + `shellcheck` + the operator-example audit + the knob validation +
   `scripts/check_repo_privacy.py` + `gitleaks`; run by CI), `make test` (helper
-  unit suite) and the `ensure-*` / `agent-*` / `keychain-*` / `run-playbook`
-  helpers. `make build` and `make lint` assert every operator knob against
-  `inventory/knob_schema.yml` through `playbooks/validate_knobs.yml`.
+  unit suite), `vault-init` (the vault password file) and the `ensure-*` /
+  `agent-*` / `keychain-*` / `run-playbook` helpers. `make build` and `make lint`
+  assert every operator knob against `inventory/knob_schema.yml` through
+  `playbooks/validate_knobs.yml`.
 - `TAGS` appends `--tags` and `HOST` appends `--limit '<HOST>:localhost'`, e.g.
   `make build HOST=builder-1 TAGS=sshd` or `make deploy HOST=builder-1`.
 - `HOST` takes one or more **literal** host names, comma-separated
