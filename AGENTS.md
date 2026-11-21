@@ -21,7 +21,8 @@ lives in `roles/buildroot/`; the opt-in key-only SSH hardening lives in
   `group_vars/builders/main.yml` comment-free from the examples, plus
   `host_vars/<name>/` (with a `build_variants` list); add `<name>` under
   `builders.hosts` with `IP` as `ansible_host`; encrypt the vault (dir
-  `0700`, file `0600`). Re-running does not overwrite existing files.
+  `0700`, file `0600`). `HOST` is implied when the inventory holds exactly one
+  machine and required otherwise. Re-running does not overwrite existing files.
 - `make bootstrap-accounts` — once: probe `iac → admin → root` on every machine
   and create/repair the `iac` automation account (key-first, NOPASSWD sudo,
   `docker` group) plus the human `admin` account when `create_admin_account` is
