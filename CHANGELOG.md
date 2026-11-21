@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.5](https://github.com/cwbitz/openwrt-source-builder-iac/compare/v0.3.4...v0.3.5) (2026-11-21)
+
+
+### Bug Fixes
+
+* **bootstrap:** wait for a busy APT lock ([7b7ef84](https://github.com/cwbitz/openwrt-source-builder-iac/commit/7b7ef84744b5c67301dfd34f18f97d4c7221a81f))
+
 ## [0.3.4](https://github.com/cwbitz/openwrt-source-builder-iac/compare/v0.3.3...v0.3.4) (2026-11-21)
 
 
