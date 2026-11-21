@@ -57,7 +57,7 @@ Artifacts land in `artifacts/<artifact_id>/targets/<target>/<subtarget>/` plus
 | Target | What it does |
 |--------|--------------|
 | `make install` | Sole dependency entry point (toolchain, collections, sshpass, passlib, Keychain) |
-| `make prep HOST=… IP=…` | Scaffold `inventory/hosts.yml`, the group vars and `host_vars/<machine>/` |
+| `make prep [HOST=…] IP=…` | Scaffold `inventory/hosts.yml`, the group vars and `host_vars/<machine>/`; `HOST` is implied when the inventory holds one machine |
 | `make bootstrap-accounts` | Probe `iac → admin → root` and create/repair the `iac` automation account |
 | `make build` | Build every variant (`HOST=<machine>` or `HOST=a,b` limits the machines, `TAGS=<tags>` the task slices) |
 | `make info` | Query the pinned ref, target and profile list without building |
