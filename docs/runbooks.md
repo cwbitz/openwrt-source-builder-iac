@@ -98,8 +98,8 @@ orchestration and overlay rendering.
 Only `targets/<target>/<subtarget>/` is fetched (`bin/packages` is not); the
 `artifacts/` directory is local-only and gitignored, and is created on demand.
 Each build also writes `artifacts/<artifact_id>/build-info/source.json` (build image,
-repo, ref, resolved commit, target, profile, jobs, kernel options, packages, feed
-commits, config hash) and `config` (the final `.config`).
+apt mirror, repo, ref, resolved commit, target, profile, jobs, kernel options,
+packages, feed commits, config hash) and `config` (the final `.config`).
 
 ### Verify
 

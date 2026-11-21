@@ -21,9 +21,10 @@ per variant and are individually selectable with `--tags`
 3. **packages** — merges the statistics module's package set (removing any
    duplicates from the operator list), deduplicates, and fails on add/remove
    conflicts.
-4. **setup** — ensures the pinned build image, clones/fetches the source tree into
-   its cache directory, checks out the resolved commit, and updates/installs the
-   feeds (see below).
+4. **setup** — ensures the pinned build image (rebuilt when the Dockerfile or
+   `mirrors.apt` changes), clones/fetches the source tree into its cache
+   directory, checks out the resolved commit, and updates/installs the feeds
+   (see below).
 5. **config** — renders the `.config` fragment the project owns (target, device,
    kernel options, kconfig switches, packages/removals, download folder, ccache).
 6. **overlay** — renders the enabled modules' uci-defaults, the `network` block
@@ -198,8 +199,9 @@ the role enables `CONFIG_IMAGEOPT` plus `CONFIG_VERSIONOPT`/`CONFIG_VERSION_FILE
 (the version prompts are nested under `IMAGEOPT`), so the naming matches the release
 and ImageBuilder artifacts instead of dropping the version.
 `source.json` records the
-build image, repository, ref, resolved commit, target, profile, job count, kernel
-options, requested packages, feed commits and a SHA256 of the final config;
+build image, apt mirror, repository, ref, resolved commit, target, profile, job
+count, kernel options, requested packages, feed commits and a SHA256 of the final
+config;
 `config` is the final `.config` itself. The builder-side `bin/` and work
 directories are removed before the next build, so repeated builds do not
 accumulate files and re-running the same inputs converges on the same output.

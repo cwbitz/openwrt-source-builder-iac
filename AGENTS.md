@@ -91,8 +91,9 @@ build_variants:
 ```
 
 The build environment is one image (`cwbitz/openwrt-buildroot`, built from
-`roles/buildroot/files/Dockerfile`): the role re-tags it when that file changes
-and records the Dockerfile digest in `build-info/source.json`. A variant that
+`roles/buildroot/files/Dockerfile`): the role rebuilds it when that file or the
+machine's `mirrors.apt` changes and records the Dockerfile digest and the mirror
+in `build-info/source.json`. A variant that
 needs different tools sets `source.build_image`; the role then builds that image
 from `inventory/custom/build-image/Dockerfile` (copy the committed `.example`)
 when that file exists, otherwise it uses or pulls the reference as-is. Nothing is
@@ -122,8 +123,8 @@ Task slices, individually selectable with `--tags`
    placeholders), Docker CLI/daemon/SDK on the host, the free-space floor
    (`source_min_free_gb`) and derives the effective job count.
 2. **modules / packages** — same semantics as the ImageBuilder project.
-3. **setup** — ensures the pinned build image (rebuilt when the Dockerfile
-   changes), clones/fetches the tree into `~/.cache/openwrt-builder/source/<key>`,
+3. **setup** — ensures the pinned build image (rebuilt when the Dockerfile or
+   `mirrors.apt` changes), clones/fetches the tree into `~/.cache/openwrt-builder/source/<key>`,
    renders `feeds.conf` from the tree's `feeds.conf.default` plus the variant's
    `source.feeds`, `feeds update -a` (new tree, `source.update`, changed commit,
    changed feed list or missing feed checkout) and `feeds install -a`.
@@ -159,7 +160,7 @@ configured identically in both, so a later run is a no-op:
 | `/etc/sudoers.d/90-openwrt-builder-iac` | first bootstrap | **keep this exact name** |
 | `vault_host_iac_password` | — | leave empty in both; use a key |
 | human `admin` account | either project | same `vault_host_admin_password`; a mismatch fails loudly |
-| `/etc/docker/daemon.json` | either project | same `docker_registry_mirrors`; merged idempotently |
+| `/etc/docker/daemon.json` | either project | same `mirrors.docker_registry`; merged idempotently |
 | sshd hardening drop-in | either project | same filename + `sshd_permit_root_login`; a mismatch fails loudly |
 | `~/.cache/openwrt-builder/source|dl|ccache` | this project | never removed by others |
 | `~/.cache/openwrt-builder/work|artifacts` | image-builder project | not touched |
@@ -187,7 +188,7 @@ guess when it does not:
   (`00-sshd-hardening.conf`). If the existing managed file carries a different
   `PermitRootLogin` policy, the run fails instead of overwriting it.
 - **`daemon.json`** — mirrors are merged into the existing file, so the same
-  `docker_registry_mirrors` list on both sides is a no-op.
+  `mirrors.docker_registry` list on both sides is a no-op.
 
 The checks are deliberately *compare-then-refuse*, not *exists-then-skip*: a pure
 "already there, do nothing" probe would make the first writer permanent and stop

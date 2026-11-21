@@ -5,9 +5,9 @@
 # the role defaults. Machine-wide settings live in group_vars/builders/main.yml;
 # no firmware secrets are baked into the image.
 
-# Docker Hub pull-through mirrors for the build host; e.g. ["https://mirror.gcr.io"]
-# is the fastest from an APAC host and also lifts Docker Hub's anonymous pull limit.
-docker_registry_mirrors: []
+mirrors:
+  apt: ""
+  docker_registry: []
 
 # [OPTIONAL] Refuse to start a build below this much free space on the builder.
 # A full source build peaks around 30 GB (build_dir + dl/ + ccache/).

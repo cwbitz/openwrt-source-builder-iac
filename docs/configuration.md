@@ -13,7 +13,7 @@ own `host_vars`.
 |----------|---------|
 | `inventory/hosts.yml` | the `builders` group: one host per machine, each with its `ansible_host` |
 | `inventory/group_vars/all/main.yml` | committed project-owned baseline: `ssh_identities` + the connection-plugin interface and the per-machine vault path |
-| `inventory/group_vars/builders/main.yml` | machine-wide operator overrides, local-only (e.g. `create_admin_user`, `docker_registry_mirrors`) |
+| `inventory/group_vars/builders/main.yml` | machine-wide operator overrides, local-only (e.g. `create_admin_user`, `mirrors.docker_registry`) |
 | `inventory/host_vars/<machine>/main.yml` | that machine's `build_variants` list and `source_min_free_gb` |
 | `inventory/host_vars/<machine>/vault.yml` | that machine's connection secrets |
 | `inventory/knob_schema.yml` | committed validation expression per top-level operator knob |
@@ -145,6 +145,18 @@ The build runs in one image, built on the machine from
 stable (`:latest`): the role re-tags it whenever that Dockerfile changes, and
 `build-info/source.json` records the Dockerfile digest beside it, so an artifact
 still identifies the exact environment.
+
+The same image build's `apt-get` follows the per-machine `mirrors.apt` knob
+(Debian suite root, e.g. `https://mirrors.tuna.tsinghua.edu.cn/debian`): the role
+passes it to the Dockerfile's `APT_MIRROR` build argument, which rewrites the
+image's Debian sources before installing the toolchain, and rebuilds the image
+when the value changes. The slim base image has no CA bundle, so an `https`
+mirror is requested over plain `http` (package indexes stay GPG-verified) and
+the derived-image builds inherit the rewritten sources. `source.json` records the
+mirror next to the digest. The bootstrap uses the same knob for the host's own
+APT sources (backed up once as `*.bak.bootstrap` and rendered to
+`/etc/apt/sources.list.d/openwrt-source-builder-mirror.list`); empty keeps the
+image's sources in both places.
 
 A variant that needs different tools sets `source.build_image`, so one machine
 can build `main` on a Java-capable image and `ap` on the default one:
@@ -417,17 +429,18 @@ administration:
 | `source.jobs` | `""` | Parallel make jobs; empty derives `min(vCPU, RAM-GB / 2)` from the reported RAM (pin it when the build host balloons) |
 | `source.ccache` | `true` | Shared compiler cache under `~/.cache/openwrt-builder/ccache` (`CONFIG_DEVEL=y` + `CONFIG_CCACHE=y` + `CONFIG_CCACHE_DIR`) |
 | `source.clean` | `false` | `make clean` before the build (keeps `dl/` and `ccache/`) |
-| `docker_registry_mirrors` | `[]` | Docker Hub pull-through mirrors written into the build host's `daemon.json` |
+| `mirrors.apt` | `""` | Debian suite root (e.g. `https://example.com/debian`) rewritten into the build host's APT sources and passed to the build image's `apt-get`; empty keeps both defaults |
+| `mirrors.docker_registry` | `[]` | Docker Hub pull-through mirrors written into the build host's `daemon.json` |
 
 A first full source build takes tens of minutes and roughly 30 GB
 (`build_dir` + `dl/` + `ccache/`); an incremental `make world` after that takes
 minutes. `make prune PURGE=1` throws the source trees and `dl/` away, so the
 next build is full again.
 
-There is no package-mirror knob: a source build downloads from the sources the
-tree itself configures. To mirror the git side, point `source.repo_url` at a
-mirror of `openwrt/openwrt`; that is the only fetch the project performs beyond
-`dl/`.
+`mirrors.apt` only covers the build host's and build image's own Debian packages;
+a source build still downloads the firmware sources and `dl/` from the URLs the
+tree itself configures. To mirror those, point `source.repo_url` at a mirror of
+`openwrt/openwrt`.
 
 ## Host security (SSH hardening)
 
