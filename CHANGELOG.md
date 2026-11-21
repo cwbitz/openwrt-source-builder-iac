@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.4.0](https://github.com/cwbitz/openwrt-source-builder-iac/compare/v0.3.5...v0.4.0) (2026-11-21)
+
+
+### ⚠ BREAKING CHANGES
+
+* **inventory:** `group_vars/builders/main.yml` must move the key paths under `ssh_keys.<id>.{pubkey,privkey}`, and `host_admin_username` / `create_admin_account` are now `admin_username` / `create_admin_user`. Values under the old names are ignored.
+
+### Code Refactoring
+
+* **inventory:** nest the SSH key paths per identity ([2d9f1d5](https://github.com/cwbitz/openwrt-source-builder-iac/commit/2d9f1d59411a47a242df5e06908ae47d15a2a080))
+
 ## [0.3.5](https://github.com/cwbitz/openwrt-source-builder-iac/compare/v0.3.4...v0.3.5) (2026-11-21)
 
 
