@@ -7,17 +7,17 @@
     ansible_become: false
     build_cache_root: "{{ ansible_facts.user_dir }}/.cache/openwrt-builder"
   tasks:
-    - name: "[Cache] Remove the per-variant scratch"
+    - name: "Cache | Remove the per-variant scratch"
       ansible.builtin.file:
         path: "{{ build_cache_root }}/work"
         state: absent
 
-    - name: "[Cache] Remove the ccache directory"
+    - name: "Cache | Remove the ccache directory"
       ansible.builtin.file:
         path: "{{ build_cache_root }}/ccache"
         state: absent
 
-    - name: "[Cache] Remove the source trees and the download cache"
+    - name: "Cache | Remove the source trees and the download cache"
       ansible.builtin.file:
         path: "{{ build_cache_root }}/{{ item }}"
         state: absent
@@ -27,13 +27,13 @@
         - image
       when: cache_purge | default(false) | bool
 
-    - name: "[Cache] Report the remaining cache size"
+    - name: "Cache | Report the remaining cache size"
       ansible.builtin.command:
         argv: [du, -sh, "{{ build_cache_root }}"]
       register: cache_size
       changed_when: false
       failed_when: false
 
-    - name: "[Cache] Show the result"
+    - name: "Cache | Show the result"
       ansible.builtin.debug:
         msg: "{{ cache_size.stdout | default('cache directory removed') }}"
