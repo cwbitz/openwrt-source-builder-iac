@@ -66,7 +66,7 @@ only the machines named in `HOST=<machine>`/`HOST=a,b`) and uses the first
 identity that works on each; when that is not `iac`, it (re)creates the `iac`
 automation account (key-first, NOPASSWD sudo, the `docker` group when present)
 and the optional human `admin` account. It self-heals a
-rotated/deleted credential. With no `host_iac_ssh_pubkey_file`, an empty
+rotated/deleted credential. With no `ssh_keys.iac.pubkey`, an empty
 `vault_host_iac_password` is generated into the machine's vault under the same
 name. Passwords use a per-account random salt with `update_password: on_create`.
 See [architecture](architecture.md) for the full model.
@@ -226,7 +226,7 @@ rootfs after the module overlays. See [configuration](configuration.md#custom-ov
 `make build` (and therefore `make deploy`) also applies `roles/sshd` at the end
 when `sshd_hardening_enabled: true` is set in `group_vars/builders/main.yml`. It
 closes password login, so it needs a key-only login that survives it — the
-`iac` account's key (`host_iac_ssh_pubkey_file`) or root's key
+`iac` account's key (`ssh_keys.iac.pubkey`) or root's key
 with `sshd_permit_root_login: prohibit-password`. Run it alone with:
 
 ```bash
@@ -243,7 +243,7 @@ host keeps its old login policy. The provider console remains the recovery path.
 | Symptom | Cause / fix |
 |---------|-------------|
 | `bootstrap-accounts`: "no working identity" | Configure the connection passwords in the machine's vault and/or the key paths in `group_vars/builders/main.yml`, or load a key into the SSH agent. If only `root` works, set the root password (or a root private key) |
-| `build`/`info` cannot connect as `iac` | Run `make bootstrap-accounts` once; the effective password is `vault_host_iac_password` (generated when empty), else set `host_iac_ssh_privkey_file`/pubkey |
+| `build`/`info` cannot connect as `iac` | Run `make bootstrap-accounts` once; the effective password is `vault_host_iac_password` (generated when empty), else set `ssh_keys.iac.privkey`/pubkey |
 | Need the auto-generated password | `make view` |
 | `build` fails: vault password file missing | Run any target that needs it, e.g. `make prep HOST=<machine>` |
 | `bootstrap-accounts` user tasks fail (sudo/become) | The probed identity needs sudo or root; the first run must reach the host as `root` or a sudo-capable `admin` |
@@ -275,7 +275,7 @@ host keeps its old login policy. The provider console remains the recovery path.
 | Out of disk during a build | `dl/`, `ccache/` and the tree grow together; `make prune PURGE=1` resets, then the next build is full |
 | `apk add kmod-*` fails: `unable to select packages: kernel-…: breaks: kmod-…[kernel=…]` | The image's kernel ABI hash is not the release build's, so the official kmods do not belong to this kernel. Add the module to the variant's `packages` and rebuild, or point apk at this build's own `bin/targets/.../packages`. See `docs/build-pipeline.md` ("Kernel and module ABI") |
 | Artifacts not in the control node's `artifacts/` | The fetch failed; inspect the fetch task. The builder keeps its `bin/` until the next build, so a re-run or a manual `scp` can recover it |
-| `--tags sshd` fails at "Prove a key-only login" | The chosen identity has no authorized key yet: set `host_iac_ssh_pubkey_file` (or root's) and run `make bootstrap-accounts`, or unset `sshd_hardening_enabled` |
+| `--tags sshd` fails at "Prove a key-only login" | The chosen identity has no authorized key yet: set `ssh_keys.iac.pubkey` (or root's) and run `make bootstrap-accounts`, or unset `sshd_hardening_enabled` |
 | Cannot reach a builder over SSH | Fix its `ansible_host` in `hosts.yml`; the connection identity comes from the committed `group_vars/all/main.yml` |
 
 ## Manual verification on a disposable host

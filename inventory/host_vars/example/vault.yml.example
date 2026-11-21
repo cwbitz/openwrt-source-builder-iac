@@ -7,14 +7,14 @@
 # live in inventory/group_vars/builders/main.yml.
 #
 # A machine also managed by another IaC project should use SSH keys for the
-# `iac` account (host_iac_ssh_pubkey_file in both projects) and leave
+# `iac` account (ssh_keys.iac.pubkey in both projects) and leave
 # vault_host_iac_password empty in both, so neither project generates a value
 # the other does not know.
 
 # Probed [iac, admin, root]; build/info use `iac`. Each identity needs a
 # password here and/or a key path in the group main.yml (SSH prefers the key).
 vault_host_root_password: ""
-# Optional human 'admin' account, created only when create_admin_account is true;
+# Optional human 'admin' account, created only when create_admin_user is true;
 # always gets a password (generated here when empty) for console login and sudo.
 vault_host_admin_password: ""
 # The automation account bootstrap-accounts creates/repairs (name fixed). Its
@@ -26,6 +26,6 @@ vault_host_iac_password: ""
 # ==============================================================================
 #   vault_host_iac_password       automation-account password, generated when no
 #                                 public key is given
-#   vault_host_admin_password     admin password, generated when create_admin_account
+#   vault_host_admin_password     admin password, generated when create_admin_user
 #                                 is true and the value is empty
 # ==============================================================================

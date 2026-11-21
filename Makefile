@@ -45,14 +45,15 @@ export ANSIBLE_CONFIG ?= ansible.cfg
 
 SSH_AGENT_ENV   ?= $(HOME)/.cache/iac/ssh-agent.env
 SSH_AGENT_RUN   ?= $(CURDIR)/scripts/run-with-ssh-agent.sh
-SSH_AGENT_KEY_VARS ?= host_iac_ssh_privkey_file host_admin_ssh_privkey_file host_root_ssh_privkey_file
+SSH_AGENT_KEYS_MAP ?= ssh_keys
 export SSH_AGENT_ENV
+export SSH_AGENT_KEYS_MAP
 export SSH_AGENT_KEYCHAIN_BIN  := $(KEYCHAIN_BIN)
 export SSH_AGENT_ANS_PLAY      := $(ANS_PLAY)
 export SSH_AGENT_INVENTORY     := $(INV)
 export SSH_AGENT_LOAD_PLAYBOOK := playbooks/ssh_agent_load.yml
 
-SSH_AGENT_PROBE := ansible-inventory -i $(INV) --list 2>/dev/null | SSH_AGENT_KEY_VARS="$(SSH_AGENT_KEY_VARS)" python3 -c "import json,os,sys; names=os.environ['SSH_AGENT_KEY_VARS'].split(); vs=json.load(sys.stdin).get('_meta',{}).get('hostvars',{}); ks={os.path.expanduser(h.get(v)) for h in vs.values() for v in names if h.get(v)}; sys.exit(0 if any(os.path.isfile(k) and (os.stat(k).st_mode & 0o077) for k in ks) else 1)"
+SSH_AGENT_PROBE := ansible-inventory -i $(INV) --list 2>/dev/null | python3 -c "import json,os,sys; m=os.environ.get('SSH_AGENT_KEYS_MAP','ssh_keys'); vs=json.load(sys.stdin).get('_meta',{}).get('hostvars',{}); ks={os.path.expanduser(p) for h in vs.values() for i in ((h.get(m) or {}).values()) for p in [((i or {}).get('privkey') or '')] if p}; sys.exit(0 if any(os.path.isfile(k) and (os.stat(k).st_mode & 0o077) for k in ks) else 1)"
 
 define SSH_AGENT_PREPARE
 	@set -e; \
@@ -326,7 +327,7 @@ ensure-sshpass:
 	if ! command -v apt-get >/dev/null 2>&1 || ! command -v dpkg-deb >/dev/null 2>&1; then \
 		echo "ERROR: cannot auto-install sshpass (apt-get/dpkg-deb not found)." >&2; \
 		echo "  Install sshpass manually, or use key-only bootstrap credentials" >&2; \
-		echo "  (host_<id>_ssh_privkey_file)." >&2; \
+		echo "  (ssh_keys.<id>.privkey)." >&2; \
 		exit 1; \
 	fi; \
 	tmp=$$(mktemp -d); trap 'rm -rf "$$tmp"' EXIT; cd "$$tmp"; \
