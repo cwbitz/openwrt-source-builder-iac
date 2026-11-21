@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.5.0](https://github.com/cwbitz/openwrt-source-builder-iac/compare/v0.4.0...v0.5.0) (2026-11-21)
+
+
+### ⚠ BREAKING CHANGES
+
+* **inventory:** the Docker mirror list moved from `docker_registry_mirrors` to `mirrors.docker_registry`; a value under the old name is ignored.
+
+### Features
+
+* **inventory:** add a package-mirror knob for the build environment ([a97b310](https://github.com/cwbitz/openwrt-source-builder-iac/commit/a97b310e5f5674e6dc709df206f62dcbc4dc392d))
+* **inventory:** keep test machines out of the default run ([1c87e18](https://github.com/cwbitz/openwrt-source-builder-iac/commit/1c87e1849bfe7dd4693c55facbc9835039d7ff1e))
+
+
+### Bug Fixes
+
+* **make:** pass the host limit as one unquoted word ([2b194b2](https://github.com/cwbitz/openwrt-source-builder-iac/commit/2b194b23fda04b011fc9a42dfa9ca41e085471a0))
+
 ## [0.4.0](https://github.com/cwbitz/openwrt-source-builder-iac/compare/v0.3.5...v0.4.0) (2026-11-21)
 
 
