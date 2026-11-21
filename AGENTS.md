@@ -36,9 +36,6 @@ lives in `roles/buildroot/`; the opt-in key-only SSH hardening lives in
 - `make prune [PURGE=1]` — prune this project's caches on the builder
   (`work/` + `ccache/`; `PURGE=1` also drops `source/`, `dl/`, `image/`); limit
   the machines with `HOST=<machine>`.
-- `make hostkeys` — refresh the selected machines' SSH host keys in the control
-  node's `known_hosts` (drop the stale entry, re-add; `HOST=<machine>` narrows
-  it).
 - `make dry-run [HOST=<machine>]` — validate the inventory, the knobs and the
   build machines' SSH reachability without pulling or building (the test-host
   skip applies here too).
@@ -53,7 +50,8 @@ lives in `roles/buildroot/`; the opt-in key-only SSH hardening lives in
 - Internal (hidden from `make help`): `lint` (syntax-check + `ansible-lint` +
   `yamllint` + `shellcheck` + the operator-example audit + the knob validation +
   `scripts/check_repo_privacy.py` + `gitleaks`; run by CI), `make test` (helper
-  unit suite), `vault-init` (the vault password file) and the `ensure-*` /
+  unit suite), `vault-init` (the vault password file), `hostkeys` (the SSH
+  host-key refresh that `bootstrap-accounts` runs first) and the `ensure-*` /
   `agent-*` / `keychain-*` / `run-playbook` helpers. `make build` and `make lint`
   assert every operator knob against `inventory/knob_schema.yml` through
   `playbooks/validate_knobs.yml`.
