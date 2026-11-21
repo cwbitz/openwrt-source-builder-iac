@@ -234,6 +234,14 @@ dry-run: validate-knobs agent-fallback ## Check the inventory, knobs and build-h
 	@$(MAKE) --no-print-directory run-playbook PLAYBOOK=playbooks/preflight_managed_hosts.yml
 	@$(SSH_AGENT_RUN) ansible -i $(INV) $(HOST_ARG) -m ansible.builtin.ping builders
 
+print: vault-init ## Print one machine's variables, including decrypted vault values; HOST=<machine>
+	@test -f $(INV) || { echo "ERROR: $(INV) not found — copy $(INV).example and fill it in."; exit 1; }
+	@$(HOST_SINGLE_GUARD); \
+	machine="$(EFFECTIVE_HOST)"; \
+	test -n "$$machine" || { echo "ERROR: HOST is required (the inventory does not hold exactly one machine)." >&2; exit 1; }; \
+	echo "Resolved machine: $$machine"; \
+	ansible-inventory -i $(INV) --host "$$machine" --yaml
+
 info: ## Query source/target/profile info (no build; HOST=<name>, TAGS=<tags>)
 	@test -f $(INV) || { \
 		echo "ERROR: $(INV) not found — copy $(INV).example and fill it in."; exit 1; }

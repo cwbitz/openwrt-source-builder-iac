@@ -62,6 +62,7 @@ Artifacts land in `artifacts/<artifact_id>/targets/<target>/<subtarget>/` plus
 | `make build` | Build every variant (`HOST=<machine>` or `HOST=a,b` limits the machines, `TAGS=<tags>` the task slices) |
 | `make info` | Query the pinned ref, target and profile list without building |
 | `make dry-run` | Validate inventory, knobs and build-host reachability without building (`HOST=<machine>`) |
+| `make print [HOST=<machine>]` | Print one machine's variables, including decrypted vault values |
 | `make deploy` | `bootstrap-accounts` then `build`; `HOST=<machine>` or `HOST=a,b` narrows the reachable machines |
 | `make prune [PURGE=1]` | Prune this project's builder caches (work + ccache; `PURGE=1` drops source trees and `dl/`; `HOST=<machine>` or `HOST=a,b` limits it) |
 | `make lint` | Local validation (same commands CI runs) |
