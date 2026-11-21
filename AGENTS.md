@@ -55,7 +55,7 @@ lives in `roles/buildroot/`; the opt-in key-only SSH hardening lives in
   `agent-*` / `keychain-*` / `run-playbook` helpers. `make build` and `make lint`
   assert every operator knob against `inventory/knob_schema.yml` through
   `playbooks/validate_knobs.yml`.
-- `TAGS` appends `--tags` and `HOST` appends `--limit '<HOST>:localhost'`, e.g.
+- `TAGS` appends `--tags` and `HOST` appends `--limit <HOST>:localhost`, e.g.
   `make build HOST=builder-1 TAGS=sshd` or `make deploy HOST=builder-1`.
 - `HOST` takes one or more **literal** host names, comma-separated
   (`HOST=builder-1,builder-2`); Ansible pattern syntax, spaces and `:` are

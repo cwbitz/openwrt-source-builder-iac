@@ -20,7 +20,7 @@ HOST_LITERAL_BAD = $(strip $(findstring *,$(HOST))$(findstring ?,$(HOST))$(finds
 $(if $(HOST_LITERAL_BAD),$(error HOST must be comma-separated literal host names (no Ansible pattern syntax); got '$(HOST)'))
 $(if $(word 2,$(HOST)),$(error HOST must be comma-separated literal host names (no spaces); got '$(HOST)'))
 HOST_LIST = $(strip $(subst $(comma), ,$(HOST)))
-HOST_ARG  = $(if $(HOST),--limit '$(HOST):localhost',)
+HOST_ARG  = $(if $(HOST),--limit $(HOST):localhost,)
 HOST_SINGLE_GUARD = test "$$(printf '%s' '$(HOST_LIST)' | wc -w)" -le 1 || { echo "ERROR: this target needs exactly one HOST; got '$(HOST)'." >&2; exit 2; }
 TAGS_ARG  = $(if $(TAGS),--tags $(TAGS),)
 
