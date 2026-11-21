@@ -55,6 +55,9 @@ Configuration is split by scope (machine-wide vs per-machine); see
 gitignored; the committed `group_vars/all/main.yml` baseline and `*.example`
 templates are tracked.
 
+Machines marked `is_test_host: true` are skipped by `make deploy`/`dry-run`
+unless named explicitly with `HOST=<machine>`.
+
 `make prep` copies the example verbatim, including the `<release-tag-or-commit>`,
 `<target>/<subtarget>` and `<profile>` placeholders; validation refuses to build
 until they are replaced.
