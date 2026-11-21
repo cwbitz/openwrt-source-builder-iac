@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.2](https://github.com/cwbitz/openwrt-source-builder-iac/compare/v0.3.1...v0.3.2) (2026-11-21)
+
+
+### Features
+
+* **make:** imply HOST when the inventory holds one machine ([#41](https://github.com/cwbitz/openwrt-source-builder-iac/issues/41)) ([40fb234](https://github.com/cwbitz/openwrt-source-builder-iac/commit/40fb2348dee5ab1641943f747ac17d03c94246f3))
+
 ## [0.3.1](https://github.com/cwbitz/openwrt-source-builder-iac/compare/v0.3.0...v0.3.1) (2026-11-19)
 
 
