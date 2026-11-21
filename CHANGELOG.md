@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.4](https://github.com/cwbitz/openwrt-source-builder-iac/compare/v0.3.3...v0.3.4) (2026-11-21)
+
+
+### Features
+
+* **make:** add a print target ([#45](https://github.com/cwbitz/openwrt-source-builder-iac/issues/45)) ([d8e6445](https://github.com/cwbitz/openwrt-source-builder-iac/commit/d8e6445ae10527bb7e79750da2181e23d08f7460))
+
 ## [0.3.3](https://github.com/cwbitz/openwrt-source-builder-iac/compare/v0.3.2...v0.3.3) (2026-11-21)
 
 
