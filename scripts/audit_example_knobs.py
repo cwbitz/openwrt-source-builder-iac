@@ -37,7 +37,7 @@ TOOLING = {"helper_vault_password_file", "helper_ansible_vault_bin"}
 INTERNAL = {"build_dir", "artifacts_dir", "artifact_id", "target_profile",
             "source_build_image"}
 GROUP_KNOBS = {"create_admin_user", "admin_username", "ssh_keys", "sshd_hardening_enabled", "sshd_permit_root_login"}
-EXTRA = {"mirrors", "build_variants"}
+EXTRA = {"is_test_host", "mirrors", "build_variants"}
 
 KEY_RE = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*):\s*(.*)$")
 INDENTED_KEY_RE = re.compile(r"^\s+(?:-\s+)?([A-Za-z_][A-Za-z0-9_]*):\s*(.*)$")

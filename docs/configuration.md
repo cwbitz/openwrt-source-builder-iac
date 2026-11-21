@@ -14,7 +14,7 @@ own `host_vars`.
 | `inventory/hosts.yml` | the `builders` group: one host per machine, each with its `ansible_host` |
 | `inventory/group_vars/all/main.yml` | committed project-owned baseline: `ssh_identities` + the connection-plugin interface and the per-machine vault path |
 | `inventory/group_vars/builders/main.yml` | machine-wide operator overrides, local-only (e.g. `create_admin_user`, `mirrors.docker_registry`) |
-| `inventory/host_vars/<machine>/main.yml` | that machine's `build_variants` list and `source_min_free_gb` |
+| `inventory/host_vars/<machine>/main.yml` | that machine's `build_variants` list, `is_test_host` and `source_min_free_gb` |
 | `inventory/host_vars/<machine>/vault.yml` | that machine's connection secrets |
 | `inventory/knob_schema.yml` | committed validation expression per top-level operator knob |
 

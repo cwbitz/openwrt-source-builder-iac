@@ -28,7 +28,8 @@ lives in `roles/buildroot/`; the opt-in key-only SSH hardening lives in
   `docker` group) plus the human `admin` account when `create_admin_user` is
   set; host keys are refreshed first. `HOST=<machine>` (or `HOST=a,b`) narrows
   the selection.
-- `make deploy` — one-click: `bootstrap-accounts` then `build`.
+- `make deploy` — one-click: `bootstrap-accounts` then `build`; machines marked
+  `is_test_host: true` are skipped unless `HOST` names them.
 - `make build` / `make info` — build every variant (machines in parallel) / query
   the pinned ref and profile list; limit the reachable machines with
   `HOST=<machine>` (or `HOST=a,b`) and select task slices with `TAGS=<tags>`.
@@ -39,7 +40,8 @@ lives in `roles/buildroot/`; the opt-in key-only SSH hardening lives in
   node's `known_hosts` (drop the stale entry, re-add; `HOST=<machine>` narrows
   it).
 - `make dry-run [HOST=<machine>]` — validate the inventory, the knobs and the
-  build machines' SSH reachability without pulling or building.
+  build machines' SSH reachability without pulling or building (the test-host
+  skip applies here too).
 - `make print [HOST=<machine>]` — print one machine's variables, including
   decrypted vault values (read-only).
 - `make edit HOST=<machine>` / `make view [HOST=<machine>]`
