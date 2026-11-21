@@ -15,6 +15,10 @@ ENV DEBIAN_FRONTEND=noninteractive \
     LANG=C.UTF-8 \
     LC_ALL=C.UTF-8
 
+# Debian suite root for the build-time apt installs; empty uses the base image's
+# own sources. Exposed as `apt_mirror` in the inventory.
+ARG APT_MIRROR=""
+
 # The host toolchain OpenWrt needs: the documented prerequisites (binutils, gcc,
 # g++, make, perl, python3, rsync, subversion, unzip, ...) plus every host tool
 # the build compiles for itself (cmake, ninja, pkg-config, bison/flex, gettext,
@@ -23,7 +27,23 @@ ENV DEBIAN_FRONTEND=noninteractive \
 # image serves every target/profile a variant can select. Package-specific host
 # tools (a JDK for Java packages, for example) are out of scope by design: build
 # a derived image and point `build_image` at it.
-RUN apt-get update \
+# The slim base has no CA bundle, so an https mirror is fetched over plain http;
+# apt still verifies the signed package indexes, and the image keeps that URL.
+RUN set -eu; \
+    if [ -n "$APT_MIRROR" ]; then \
+      mirror="$APT_MIRROR"; \
+      if [ ! -s /etc/ssl/certs/ca-certificates.crt ]; then \
+        mirror="$(printf '%s' "$mirror" | sed 's#^https://#http://#')"; \
+      fi; \
+      codename="$(. /etc/os-release && printf '%s' "$VERSION_CODENAME")"; \
+      security="$(printf '%s' "$mirror" | sed 's#/debian/*$##')/debian-security"; \
+      rm -f /etc/apt/sources.list.d/*.sources; \
+      { printf 'deb [signed-by=/usr/share/keyrings/debian-archive-keyring.gpg] %s %s main\n' "$mirror" "$codename"; \
+        printf 'deb [signed-by=/usr/share/keyrings/debian-archive-keyring.gpg] %s %s-updates main\n' "$mirror" "$codename"; \
+        printf 'deb [signed-by=/usr/share/keyrings/debian-archive-keyring.gpg] %s %s-security main\n' "$security" "$codename"; } \
+        > /etc/apt/sources.list; \
+    fi; \
+    apt-get update \
  && apt-get install -y --no-install-recommends \
       bash bc binutils bison build-essential bzip2 ca-certificates ccache \
       clang cmake cpio curl device-tree-compiler diffutils dwarves file findutils flex \

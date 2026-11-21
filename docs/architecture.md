@@ -41,7 +41,7 @@ each.
   every machine: the SSH identity map (`ssh_identities`), the connection-plugin
   interface derived from it, and the per-machine connection vault path.
 - `inventory/group_vars/builders/` — machine-wide operator overrides, local-only
-  (e.g. `create_admin_user`, `docker_registry_mirrors`).
+  (e.g. `create_admin_user`, `mirrors.docker_registry`).
 
 Committed: `group_vars/all/main.yml`, `host_vars/example/` and the
 `group_vars/builders/*.example` templates; the real `group_vars/builders/main.yml`

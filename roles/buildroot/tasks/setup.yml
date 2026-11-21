@@ -17,6 +17,12 @@
     mode: "0644"
   register: source_dockerfile
 
+- name: Read the apt mirror recorded for the build environment
+  ansible.builtin.slurp:
+    src: "{{ source_image_dir }}/.apt_mirror"
+  register: source_build_image_apt_mirror
+  failed_when: false
+
 - name: Ensure the project's build environment image is present
   community.docker.docker_image:
     name: "{{ build_image_default.split(':')[0] }}"
@@ -25,8 +31,19 @@
     build:
       path: "{{ source_image_dir }}"
       pull: false
-    force_source: "{{ source_dockerfile is changed }}"
+      args:
+        APT_MIRROR: "{{ build_apt_mirror }}"
+    force_source: >-
+      {{ (source_dockerfile is changed)
+         or ((source_build_image_apt_mirror.content | default('') | b64decode | trim)
+             != build_apt_mirror) }}
     state: present
+
+- name: Record the apt mirror of the build environment
+  ansible.builtin.copy:
+    content: "{{ build_apt_mirror }}\n"
+    dest: "{{ source_image_dir }}/.apt_mirror"
+    mode: "0644"
 
 - name: Check for a machine-local build environment definition
   ansible.builtin.stat:

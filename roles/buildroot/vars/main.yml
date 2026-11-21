@@ -26,6 +26,10 @@ build_image_digest: >-
   {{ lookup('file', project_root ~ '/roles/buildroot/files/Dockerfile')
      | hash('sha256') }}
 
+# Debian suite root for the build host's apt and the build image's apt-get;
+# empty uses the image's own sources.
+build_apt_mirror: "{{ ((mirrors | default({}, true)).apt | default('', true)) | trim }}"
+
 build_id: "{{ inventory_hostname }}-{{ (build_variant | default({})).name | default('') }}"
 builder_workdir: "{{ build_dir }}/work/{{ build_id }}"
 

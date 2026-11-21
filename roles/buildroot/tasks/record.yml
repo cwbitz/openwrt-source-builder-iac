@@ -27,6 +27,7 @@
       backend: source
       build_image: "{{ build_image }}"
       build_image_digest: "{{ build_image_digest }}"
+      apt_mirror: "{{ build_apt_mirror }}"
       ref: "{{ source.ref }}"
       repo_url: "{{ source_repo_url }}"
       commit: "{{ source_fetched_commit.stdout | trim }}"
