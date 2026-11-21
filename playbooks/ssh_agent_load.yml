@@ -35,7 +35,7 @@
     - name: "SSHAgent | Warn when no private-key paths are configured"
       ansible.builtin.debug:
         msg: >-
-          No host_<id>_ssh_privkey_file values found (no hosts, or empty
+          No ssh_keys.<id>.privkey values found (no hosts, or empty
           vaults). Nothing to load.
       when: agent_privkeys | length == 0
 

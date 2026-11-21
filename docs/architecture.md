@@ -41,7 +41,7 @@ each.
   every machine: the SSH identity map (`ssh_identities`), the connection-plugin
   interface derived from it, and the per-machine connection vault path.
 - `inventory/group_vars/builders/` — machine-wide operator overrides, local-only
-  (e.g. `create_admin_account`, `docker_registry_mirrors`).
+  (e.g. `create_admin_user`, `docker_registry_mirrors`).
 
 Committed: `group_vars/all/main.yml`, `host_vars/example/` and the
 `group_vars/builders/*.example` templates; the real `group_vars/builders/main.yml`
@@ -95,7 +95,7 @@ Normal runs (`build`/`info`) connect as the `iac` automation account; only
 `make bootstrap-accounts` probes. The identity map `ssh_identities` in
 `group_vars/all/main.yml` resolves the Ansible connection vars from the shared
 vault (`vault_host_<id>_password`) and the non-secret group knobs
-(`host_admin_username`, `host_<id>_ssh_{privkey,pubkey}_file` in
+(`admin_username`, `ssh_keys.<id>.{privkey,pubkey}` in
 `group_vars/builders/main.yml`) for every machine.
 
 `make bootstrap-accounts` (once per machine):
@@ -109,11 +109,11 @@ vault (`vault_host_<id>_password`) and the non-secret group knobs
    the probed identity; when it already is `iac`, it only applies the optional
    pubkey/sudo state. This self-heals a deleted/rotated credential.
 3. **Sets credentials**: a supplied public key
-   (`host_<id>_ssh_pubkey_file`, a control-node path) switches the account
+   (`ssh_keys.<id>.pubkey`, a control-node path) switches the account
    to key auth; otherwise an empty `vault_host_iac_password` is generated into
    the machine's vault under the same name (existing non-empty values are never
    rotated). It optionally provisions the human `admin` account when
-   `create_admin_account` is set.
+   `create_admin_user` is set.
 4. **Grants sudo**: NOPASSWD for the automation account, password sudo for the
    human admin. Password hashes use a per-account random salt with
    `update_password: on_create`, so re-runs are idempotent.

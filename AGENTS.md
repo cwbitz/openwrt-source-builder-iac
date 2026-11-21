@@ -25,7 +25,7 @@ lives in `roles/buildroot/`; the opt-in key-only SSH hardening lives in
   machine and required otherwise. Re-running does not overwrite existing files.
 - `make bootstrap-accounts` — once: probe `iac → admin → root` on every machine
   and create/repair the `iac` automation account (key-first, NOPASSWD sudo,
-  `docker` group) plus the human `admin` account when `create_admin_account` is
+  `docker` group) plus the human `admin` account when `create_admin_user` is
   set; host keys are refreshed first. `HOST=<machine>` (or `HOST=a,b`) narrows
   the selection.
 - `make deploy` — one-click: `bootstrap-accounts` then `build`.
@@ -166,7 +166,7 @@ configured identically in both, so a later run is a no-op:
 
 ### Both projects may set the same knobs to true
 
-`create_admin_account` and `sshd_hardening_enabled` are safe to enable in **both**
+`create_admin_user` and `sshd_hardening_enabled` are safe to enable in **both**
 projects, because each one converges on the same declared state and refuses to
 guess when it does not:
 
