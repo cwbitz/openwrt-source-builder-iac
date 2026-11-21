@@ -86,7 +86,7 @@ ANSIBLE_PYTHON ?= $(shell \
 
 HELP_TARGETS := install prep edit view \
                 bootstrap-accounts deploy \
-                info prune hostkeys \
+                info prune \
                 dry-run print \
                 help
 
@@ -201,7 +201,7 @@ rebuild-reset:
 		rm -rf .cache/facts; \
 	fi
 
-hostkeys: vault-init ## Refresh the machines' SSH host keys in known_hosts; FORCE=1 accepts a changed key
+hostkeys: vault-init
 	@set -e; \
 	nh="$(HOME)/.ssh/known_hosts"; mkdir -p "$$(dirname "$$nh")"; tmp=$$(mktemp); targets=$$(mktemp); tsv=$$(mktemp); pub=$$(mktemp); failures=0; \
 	trap 'rm -f "$$tmp" "$$targets" "$$tsv" "$$pub"' EXIT; \
