@@ -38,6 +38,8 @@ lives in `roles/buildroot/`; the opt-in key-only SSH hardening lives in
 - `make hostkeys` — refresh the selected machines' SSH host keys in the control
   node's `known_hosts` (drop the stale entry, re-add; `HOST=<machine>` narrows
   it).
+- `make dry-run [HOST=<machine>]` — validate the inventory, the knobs and the
+  build machines' SSH reachability without pulling or building.
 - `make edit HOST=<machine>` / `make view [HOST=<machine>]`
   — the per-machine connection vault; plaintext is encrypted first, the keys are
   re-sorted alphabetically after editing, and a save is refused when the vault
