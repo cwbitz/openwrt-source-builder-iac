@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.3](https://github.com/cwbitz/openwrt-source-builder-iac/compare/v0.3.2...v0.3.3) (2026-11-21)
+
+
+### Features
+
+* **make:** add a dry-run target ([#43](https://github.com/cwbitz/openwrt-source-builder-iac/issues/43)) ([06e1900](https://github.com/cwbitz/openwrt-source-builder-iac/commit/06e190072b6b5e120ab534b1e0be812d4c9c929a))
+
 ## [0.3.2](https://github.com/cwbitz/openwrt-source-builder-iac/compare/v0.3.1...v0.3.2) (2026-11-21)
 
 
