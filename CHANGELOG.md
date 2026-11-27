@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.1](https://github.com/cwbitz/openwrt-source-builder-iac/compare/v0.5.0...v0.5.1) (2026-11-27)
+
+
+### Bug Fixes
+
+* **buildroot:** run defconfig before the optional make clean ([#59](https://github.com/cwbitz/openwrt-source-builder-iac/issues/59)) ([59f6a25](https://github.com/cwbitz/openwrt-source-builder-iac/commit/59f6a254ada3e455e0d90d6555e165e591aedd28))
+
 ## [0.5.0](https://github.com/cwbitz/openwrt-source-builder-iac/compare/v0.4.0...v0.5.0) (2026-11-21)
 
 
