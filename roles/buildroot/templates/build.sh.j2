@@ -15,11 +15,6 @@ export CCACHE_DIR=/ccache
 
 log() { printf '>>> %s\n' "$*"; }
 
-{% if source.clean | default(false) | bool %}
-log "make clean (dl/ and ccache/ are kept)"
-make clean
-{% endif %}
-
 # defconfig stays serial: the prerequisite checks it triggers build and run their
 # test programs under one shared $(TMP_DIR), so parallel jobs clobber each other
 # and report the host compilers and tools as broken. The first run on a fresh tree
@@ -36,6 +31,15 @@ until make defconfig; do
     echo ">>> retrying make defconfig after a failed first run"
     attempt=$((attempt + 1))
 done
+
+# `clean` depends on `.config`, and the rule that provides it runs menuconfig
+# when the file lacks CONFIG_HAVE_DOT_CONFIG — which the rendered fragment does
+# until defconfig has completed. Cleaning after defconfig keeps the target
+# non-interactive; defconfig does not read the build products clean removes.
+{% if source.clean | default(false) | bool %}
+log "make clean (dl/ and ccache/ are kept)"
+make clean
+{% endif %}
 
 # defconfig re-derives the whole config from the dependency graph, so a requested
 # kernel option can disappear when its dependency is unmet. Fail here instead of
