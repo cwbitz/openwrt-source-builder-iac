@@ -226,6 +226,11 @@ as `iac` and converges.
   starts from a fresh tree by design.
 - The `.manifest` package-compare is the parity check against the ImageBuilder
   variant; keep it in the runbook when changing the package logic.
+- `make clean` depends on `.config`, and the rule that provides it launches
+  menuconfig (which dies on a non-interactive run) when the file has no
+  `CONFIG_HAVE_DOT_CONFIG` — the rendered fragment only gains it from
+  `make defconfig`. The build script therefore runs `defconfig` before the
+  optional `clean`; reversing that order fails the run immediately.
 - `scripts/feeds update/install` runs on the host, and `include/scan.awk` needs
   gawk's `asort()`: with mawk the feed index comes out empty, the install links
   nothing and still exits 0, and `make defconfig` silently drops every package
